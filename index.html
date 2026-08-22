@@ -3328,7 +3328,6 @@ Proactive & Non-proactive：
                 refreshCharTemplateDropdowns();
                 renderCustomTemplatesList();
                 restoreRatioUI(); renderPresetDropdown(); renderCardFolders(); renderCardList('首页'); renderUserFolders(); renderUserList('首页'); renderGalleryFolders(); renderGalleryImages('首页'); renderInspFolders(); renderInspirationsList('首页');
-            }
         }
 
         function updateTime() { const now = new Date(); let h = now.getHours(); let m = now.getMinutes(); h = h < 10 ? '0' + h : h; m = m < 10 ? '0' + m : m; document.getElementById('status-time').textContent = `${h}:${m}`; }
