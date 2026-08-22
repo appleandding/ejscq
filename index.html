@@ -2178,7 +2178,7 @@ age：年龄
         <div class="modal-card" style="max-width: 440px; max-height: 85vh;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <span style="font-size: 11px; font-weight: bold; color: #222; background: rgba(0,0,0,0.06); padding: 2px 8px; border-radius: 6px;">工坊重要更新日志</span>
-                <span style="font-size: 10px; color: var(--text-light);">版本 v1.9.7</span>
+                <span style="font-size: 10px; color: var(--text-light);">版本 v1.9.5</span>
             </div>
             <h3 class="modal-title" style="margin-bottom: 12px; font-size: 16px;">✨ 耳机の生成工坊·全新升级公告</h3>
             <div class="modal-content-area" style="font-size: 12px; line-height: 1.7; color: var(--text-muted); white-space: pre-wrap; padding-right: 4px;">
@@ -2775,26 +2775,33 @@ Proactive & Non-proactive：
         ];
         
 
-        const DB_NAME = 'ErjiWorkshopDB'; const STORE_NAME = 'AppState'; let db;
+        const DB_NAME = 'ErjiWorkshopDB'; const STORE_NAME = 'AppState'; let db = null;
+
         function initDB() { 
             return new Promise((r) => { 
                 let finished = false;
-                // 专门防止 iOS Safari 在本地文件或无痕模式下挂起卡死：300ms 超时强制放行
                 const timeoutTimer = setTimeout(() => {
                     if (!finished) { finished = true; r(); }
-                }, 300);
+                }, 400);
 
                 if (!window.indexedDB) { finished = true; clearTimeout(timeoutTimer); r(); return; } 
                 try { 
-                    const req = indexedDB.open(DB_NAME, 2); 
+                    const req = indexedDB.open(DB_NAME, 3); 
                     req.onupgradeneeded = (e) => { 
                         try {
-                            db = e.target.result; 
-                            if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME); 
+                            const dbInstance = e.target.result; 
+                            if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
+                                dbInstance.createObjectStore(STORE_NAME); 
+                            }
                         } catch(err) {}
                     }; 
                     req.onsuccess = (e) => { 
-                        if (!finished) { finished = true; clearTimeout(timeoutTimer); db = e.target.result; r(); }
+                        if (!finished) { 
+                            finished = true; 
+                            clearTimeout(timeoutTimer); 
+                            db = e.target.result; 
+                            r(); 
+                        }
                     }; 
                     req.onerror = () => { 
                         if (!finished) { finished = true; clearTimeout(timeoutTimer); r(); }
@@ -2804,73 +2811,123 @@ Proactive & Non-proactive：
                 } 
             }); 
         }
-        
-async function saveToDB(key, data) {
-    // 1. 同步保存一份到 localStorage 做应急备份
-    try {
-        localStorage.setItem(key, JSON.stringify(data));
-    } catch (e) {
-        // 如果数据体积太大，降级保存一份剔除相册和头像的轻量备份
-        try {
-            const trimmed = JSON.parse(JSON.stringify(data));
-            trimmed.images = []; 
-            trimmed.cards.forEach(c => { 
-                c.avatar = ''; 
-                if(c.ifLines) c.ifLines.forEach(l => l.avatar = ''); 
-            });
-            trimmed.users.forEach(u => u.avatar = '');
-            localStorage.setItem(key + '_trimmed', JSON.stringify(trimmed));
-        } catch (err) {}
-    }
-    
-    // 2. 正常写入本地 IndexedDB 数据库（必须等待事务完整提交，防止 reload 导致中途回滚）
-    return new Promise((r) => {
-        if (!db) { r(false); return; }
-        try {
-            const tx = db.transaction(STORE_NAME, 'readwrite');
-            const store = tx.objectStore(STORE_NAME);
-            store.put(data, key);
-            // 核心修改：确保物理落盘完成后才 resolved 传递 true
-            tx.oncomplete = () => r(true);
-            tx.onerror = () => r(false);
-            tx.onabort = () => r(false);
-        } catch(e) {
-            r(false);
-        }
-    });
-}
 
-async function loadFromDB(key) {
-    return new Promise((r) => {
-        // 1. 如果 IndexedDB 未打开成功，直接读取本地 localStorage 备份
-        if (!db) {
-            const d = localStorage.getItem(key) || localStorage.getItem(key + '_trimmed');
-            r(d ? JSON.parse(d) : null);
-            return;
+        // 提取核心轻量配置（标签、分类、模板、API等），永不超限，绝对保证 100% 存活
+        function extractCoreConfig(s) {
+            return {
+                customGenders: s.customGenders || [],
+                customPersonalities: s.customPersonalities || [],
+                customOccupations: s.customOccupations || [],
+                customOrientations: s.customOrientations || [],
+                customAges: s.customAges || [],
+                customArchetypes: s.customArchetypes || [],
+                customCategories: s.customCategories || [],
+                writingStyles: s.writingStyles || [],
+                userCustomTemplates: s.userCustomTemplates || [],
+                tApiUrl: s.tApiUrl || '', tApiKey: s.tApiKey || '', tApiModel: s.tApiModel || '', tApiProxy: s.tApiProxy || '',
+                vApiUrl: s.vApiUrl || '', vApiKey: s.vApiKey || '', vApiModel: s.vApiModel || '', vApiProxy: s.vApiProxy || '',
+                iApiUrl: s.iApiUrl || '', iApiKey: s.iApiKey || '', iApiModel: s.iApiModel || '', iApiProxy: s.iApiProxy || '',
+                quiz_verified: s.quiz_verified || false,
+                agreement_signed: s.agreement_signed || false,
+                disclaimer_signed: s.disclaimer_signed || false,
+                import_agreement_signed: s.import_agreement_signed || false,
+                jailbreakEnabled: s.jailbreakEnabled || false, jailbreakPrompt: s.jailbreakPrompt || '',
+                char_template_type: s.char_template_type || 'earphone',
+                wenwulei_rules_accepted: s.wenwulei_rules_accepted || false,
+                cardFolders: s.cardFolders || ['首页'],
+                userFolders: s.userFolders || ['首页'],
+                wbFolders: s.wbFolders || ['首页'],
+                folders: s.folders || ['首页'],
+                orgFolders: s.orgFolders || ['首页'],
+                styleFolders: s.styleFolders || ['首页'],
+                inspFolders: s.inspFolders || ['首页']
+            };
         }
-        try {
-            // 2. 正常从 IndexedDB 读取
-            const tx = db.transaction(STORE_NAME, 'readonly');
-            const req = tx.objectStore(STORE_NAME).get(key);
-            req.onsuccess = () => {
-                if (req.result) {
-                    r(req.result);
-                } else {
-                    // 如果系统检测出 IndexedDB 为空，立即尝试从 localStorage 恢复
-                    const d = localStorage.getItem(key) || localStorage.getItem(key + '_trimmed');
-                    r(d ? JSON.parse(d) : null);
+
+        async function saveToDB(key, data) {
+            // 1. 同步将核心标签与配置存入 localStorage 独立专区（永不超配额，秒级持久化）
+            try {
+                const coreConfig = extractCoreConfig(data);
+                localStorage.setItem('erji_core_config', JSON.stringify(coreConfig));
+            } catch(err) {}
+
+            // 2. 尝试将完整数据备份至 localStorage，超限时智能清理旧缓存，防止读到陈旧数据
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+                localStorage.removeItem(key + '_pruned');
+            } catch (e) {
+                try {
+                    // 超限时移除可能导致覆盖的旧版 key，安全写入精简版
+                    localStorage.removeItem(key);
+                    const pruned = JSON.parse(JSON.stringify(data));
+                    pruned.images = (pruned.images || []).slice(0, 15); // 保留最新部分图片
+                    localStorage.setItem(key + '_pruned', JSON.stringify(pruned));
+                } catch(err) {}
+            }
+
+            // 3. 正常写入无容量上限的本地 IndexedDB 数据库
+            return new Promise((r) => {
+                if (!db) { r(true); return; }
+                try {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    store.put(data, key);
+                    tx.oncomplete = () => r(true);
+                    tx.onerror = () => r(true);
+                    tx.onabort = () => r(true);
+                } catch(e) {
+                    r(true);
                 }
-            };
-            req.onerror = () => {
-                const d = localStorage.getItem(key) || localStorage.getItem(key + '_trimmed');
-                r(d ? JSON.parse(d) : null);
-            };
-        } catch(e) {
-            const d = localStorage.getItem(key) || localStorage.getItem(key + '_trimmed');
-            r(d ? JSON.parse(d) : null);
+            });
         }
-    });
-}
+
+        async function loadFromDB(key) {
+            // 1. 读取保底核心配置
+            let coreConfig = null;
+            try {
+                const coreRaw = localStorage.getItem('erji_core_config');
+                if (coreRaw) coreConfig = JSON.parse(coreRaw);
+            } catch(e) {}
+
+            // 2. 从 IndexedDB 或 localStorage 读取完整数据集
+            let fullData = null;
+            if (db) {
+                try {
+                    fullData = await new Promise((r) => {
+                        const tx = db.transaction(STORE_NAME, 'readonly');
+                        const req = tx.objectStore(STORE_NAME).get(key);
+                        req.onsuccess = () => r(req.result || null);
+                        req.onerror = () => r(null);
+                    });
+                } catch(e) {}
+            }
+
+            if (!fullData) {
+                try {
+                    const raw = localStorage.getItem(key) || localStorage.getItem(key + '_pruned');
+                    if (raw) fullData = JSON.parse(raw);
+                } catch(e) {}
+            }
+
+            // 3. 核心机制：将轻量保底配置与完整数据安全深度合并，确保标签和配置 100% 存活
+            if (fullData || coreConfig) {
+                const merged = Object.assign({}, fullData || {});
+                if (coreConfig) {
+                    for (let k in coreConfig) {
+                        // 如果核心配置有更新的标签列表，确保合并恢复
+                        if (Array.isArray(coreConfig[k]) && coreConfig[k].length > 0) {
+                            merged[k] = coreConfig[k];
+                        } else if (coreConfig[k] !== undefined && coreConfig[k] !== '') {
+                            if (merged[k] === undefined || merged[k] === '') {
+                                merged[k] = coreConfig[k];
+                            }
+                        }
+                    }
+                }
+                return merged;
+            }
+            return null;
+        }
 
         let state = {
             customGenders: [],
@@ -3173,48 +3230,93 @@ async function loadFromDB(key) {
         async function loadData() {
             const data = await loadFromDB('global_state');
             if (data) {
-                state = Object.assign(state, data);
-                if (state.tApiUrl) document.getElementById('t-api-url').value = state.tApiUrl; if (state.tApiKey) document.getElementById('t-api-key').value = state.tApiKey; if (state.tApiProxy) document.getElementById('t-api-proxy').value = state.tApiProxy; if (state.tApiModel) document.getElementById('t-api-model').innerHTML = `<option value="${state.tApiModel}">${state.tApiModel}</option>`;
-                if (state.vApiUrl) document.getElementById('v-api-url').value = state.vApiUrl; if (state.vApiKey) document.getElementById('v-api-key').value = state.vApiKey; if (state.vApiProxy) document.getElementById('v-api-proxy').value = state.vApiProxy; if (state.vApiModel) document.getElementById('v-api-model').innerHTML = `<option value="${state.vApiModel}">${state.vApiModel}</option>`;
-                if (state.iApiUrl) document.getElementById('i-api-url').value = state.iApiUrl; if (state.iApiKey) document.getElementById('i-api-key').value = state.iApiKey; if (state.iApiProxy) document.getElementById('i-api-proxy').value = state.iApiProxy;
-                if (state.iApiModel) { const iSel = document.getElementById('i-api-model'); if (![...iSel.options].some(o => o.value === state.iApiModel)) iSel.innerHTML += `<option value="${state.iApiModel}">${state.iApiModel}</option>`; iSel.value = state.iApiModel; }
-                
-                if (!state.cardFolders) state.cardFolders = ['首页']; if (!state.userFolders) state.userFolders = ['首页']; if (!state.folders) state.folders = ['首页'];
-                if (!state.promptPresets) state.promptPresets = []; if (!state.users) state.users = []; if (!state.inspirations) state.inspirations = []; if (!state.inspFolders) state.inspFolders = ['首页'];
-                if (!state.customGenders) state.customGenders = []; if (!state.customPersonalities) state.customPersonalities = []; if (!state.customOccupations) state.customOccupations = [];
-                if (!state.customOrientations) state.customOrientations = []; if (!state.customAges) state.customAges = []; if (!state.customArchetypes) state.customArchetypes = [];
-                if (!state.customCategories) state.customCategories = [];
-                
-                // 初次进入或刷新重绘标签面板
-                renderAllSelectableTags();
+                // 安全融合数据，防止丢失已有配置
+                state = Object.assign({}, state, data);
+            }
 
-                document.getElementById('jailbreak-cb').checked = state.jailbreakEnabled || false; document.getElementById('jailbreak-prompt-textarea').value = state.jailbreakPrompt || ''; toggleJailbreakUI();
-                document.getElementById('wb-jailbreak-cb').checked = state.wbJailbreakEnabled || false; document.getElementById('wb-jailbreak-prompt-textarea').value = state.wbJailbreakPrompt || ''; toggleWbJailbreakUI();
-                document.getElementById('wbg-jailbreak-cb').checked = state.wbgJailbreakEnabled || false; document.getElementById('wbg-jailbreak-prompt-textarea').value = state.wbgJailbreakPrompt || ''; toggleWbgJailbreakUI();
+            // 检查并恢复各模块的基础数组
+            if (!state.cardFolders) state.cardFolders = ['首页']; 
+            if (!state.userFolders) state.userFolders = ['首页']; 
+            if (!state.folders) state.folders = ['首页'];
+            if (!state.promptPresets) state.promptPresets = []; 
+            if (!state.users) state.users = []; 
+            if (!state.inspirations) state.inspirations = []; 
+            if (!state.inspFolders) state.inspFolders = ['首页'];
+            if (!state.customGenders) state.customGenders = []; 
+            if (!state.customPersonalities) state.customPersonalities = []; 
+            if (!state.customOccupations) state.customOccupations = [];
+            if (!state.customOrientations) state.customOrientations = []; 
+            if (!state.customAges) state.customAges = []; 
+            if (!state.customArchetypes) state.customArchetypes = [];
+            if (!state.customCategories) state.customCategories = [];
+            if (!state.writingStyles) state.writingStyles = [];
+            if (!state.styleFolders) state.styleFolders = ['首页'];
+            if (!state.organizedCards) state.organizedCards = [];
+            if (!state.orgFolders) state.orgFolders = ['首页'];
+            if (!state.userCustomTemplates) state.userCustomTemplates = [];
 
-                if (state.customMainBg) { applyWallpapers(state.customMainBg); document.getElementById('wallpaper-main-preview').src = state.customMainBg; document.getElementById('wallpaper-main-preview').style.display = 'block'; }
-                if (state.preferredExportFormat) document.getElementById('card-export-format').value = state.preferredExportFormat;
-                if (state.preferredUserExportFormat) document.getElementById('user-export-format').value = state.preferredUserExportFormat;
-                if (state.customPosPrompt) document.getElementById('img-pos').value = state.customPosPrompt; else document.getElementById('img-pos').value = BUILTIN_PRESET_POS;
+            // 渲染并还原 API 输入框
+            if (state.tApiUrl && document.getElementById('t-api-url')) document.getElementById('t-api-url').value = state.tApiUrl; 
+            if (state.tApiKey && document.getElementById('t-api-key')) document.getElementById('t-api-key').value = state.tApiKey; 
+            if (state.tApiProxy && document.getElementById('t-api-proxy')) document.getElementById('t-api-proxy').value = state.tApiProxy; 
+            if (state.tApiModel && document.getElementById('t-api-model')) document.getElementById('t-api-model').innerHTML = `<option value="${state.tApiModel}">${state.tApiModel}</option>`;
+            
+            if (state.vApiUrl && document.getElementById('v-api-url')) document.getElementById('v-api-url').value = state.vApiUrl; 
+            if (state.vApiKey && document.getElementById('v-api-key')) document.getElementById('v-api-key').value = state.vApiKey; 
+            if (state.vApiProxy && document.getElementById('v-api-proxy')) document.getElementById('v-api-proxy').value = state.vApiProxy; 
+            if (state.vApiModel && document.getElementById('v-api-model')) document.getElementById('v-api-model').innerHTML = `<option value="${state.vApiModel}">${state.vApiModel}</option>`;
+            
+            if (state.iApiUrl && document.getElementById('i-api-url')) document.getElementById('i-api-url').value = state.iApiUrl; 
+            if (state.iApiKey && document.getElementById('i-api-key')) document.getElementById('i-api-key').value = state.iApiKey; 
+            if (state.iApiProxy && document.getElementById('i-api-proxy')) document.getElementById('i-api-proxy').value = state.iApiProxy;
+            if (state.iApiModel && document.getElementById('i-api-model')) { 
+                const iSel = document.getElementById('i-api-model'); 
+                if (![...iSel.options].some(o => o.value === state.iApiModel)) iSel.innerHTML += `<option value="${state.iApiModel}">${state.iApiModel}</option>`; 
+                iSel.value = state.iApiModel; 
+            }
 
-                // 新增：自动初始化与读取人设模板持久化属性
-                if (!state.char_template_type) state.char_template_type = 'earphone';
-                if (state.wenwulei_rules_accepted === undefined) state.wenwulei_rules_accepted = false;
-                
-                // 同步设置 UI 元素选择
-                if (document.getElementById('char-template-select')) document.getElementById('char-template-select').value = state.char_template_type;
-                if (document.getElementById('char-option-template-select')) document.getElementById('char-option-template-select').value = state.char_template_type;
-                
-                // 同步更新已签署归档面板显示
-                if (state.wenwulei_rules_accepted) {
-                    const row = document.getElementById('announcement-wenwulei-rules');
-                    if (row) row.style.display = 'block';
-                    const area = document.getElementById('archive-wenwulei-rules-area');
-                    if (area) area.innerText = WENWULEI_RULES_TEXT;
-                }
-                
-                // 将吻我涙模板填入书架预览展示
-                const displayEl = document.getElementById('pre-template-wenwulei-display');
+            // 立即重绘所有自建标签，确保刷新后 100% 存在
+            renderAllSelectableTags();
+
+            if (document.getElementById('jailbreak-cb')) {
+                document.getElementById('jailbreak-cb').checked = state.jailbreakEnabled || false; 
+                document.getElementById('jailbreak-prompt-textarea').value = state.jailbreakPrompt || ''; 
+                toggleJailbreakUI();
+            }
+            if (document.getElementById('wb-jailbreak-cb')) {
+                document.getElementById('wb-jailbreak-cb').checked = state.wbJailbreakEnabled || false; 
+                document.getElementById('wb-jailbreak-prompt-textarea').value = state.wbJailbreakPrompt || ''; 
+                toggleWbJailbreakUI();
+            }
+            if (document.getElementById('wbg-jailbreak-cb')) {
+                document.getElementById('wbg-jailbreak-cb').checked = state.wbgJailbreakEnabled || false; 
+                document.getElementById('wbg-jailbreak-prompt-textarea').value = state.wbgJailbreakPrompt || ''; 
+                toggleWbgJailbreakUI();
+            }
+
+            if (state.customMainBg) { 
+                applyWallpapers(state.customMainBg); 
+                const prev = document.getElementById('wallpaper-main-preview');
+                if (prev) { prev.src = state.customMainBg; prev.style.display = 'block'; }
+            }
+            if (state.preferredExportFormat && document.getElementById('card-export-format')) document.getElementById('card-export-format').value = state.preferredExportFormat;
+            if (state.preferredUserExportFormat && document.getElementById('user-export-format')) document.getElementById('user-export-format').value = state.preferredUserExportFormat;
+            if (document.getElementById('img-pos')) document.getElementById('img-pos').value = state.customPosPrompt || BUILTIN_PRESET_POS;
+
+            if (!state.char_template_type) state.char_template_type = 'earphone';
+            if (state.wenwulei_rules_accepted === undefined) state.wenwulei_rules_accepted = false;
+            
+            if (document.getElementById('char-template-select')) document.getElementById('char-template-select').value = state.char_template_type;
+            if (document.getElementById('char-option-template-select')) document.getElementById('char-option-template-select').value = state.char_template_type;
+            
+            if (state.wenwulei_rules_accepted) {
+                const row = document.getElementById('announcement-wenwulei-rules');
+                if (row) row.style.display = 'block';
+                const area = document.getElementById('archive-wenwulei-rules-area');
+                if (area) area.innerText = WENWULEI_RULES_TEXT;
+            }
+            
+            const displayEl = document.getElementById('pre-template-wenwulei-display');
                 if (displayEl) displayEl.innerText = TEMPLATE_WENWULEI;
                 if (state.customNegPrompt) document.getElementById('img-neg').value = state.customNegPrompt; else document.getElementById('img-neg').value = BUILTIN_PRESET_NEG;
 
@@ -3496,33 +3598,79 @@ async function loadFromDB(key) {
 
         function parseMultiGeneratedText(fullText, memberNames) {
             const map = { '全览': fullText || '' };
-            if (!fullText || !memberNames) return map;
+            if (!fullText || !memberNames || memberNames.length === 0) return map;
+
+            // 定位每个角色在全文中的起始位置
+            const positions = [];
             memberNames.forEach(name => {
-                try {
-                    // 转义角色名字中的特殊符号，防止 iOS Safari 正则报错崩溃
-                    const safeName = (name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const regex = new RegExp(`(?:###|==|【|#)\\s*角色[：:]?\\s*${safeName}[\\s\\S]*?(?=(?:###|==|【|#)\\s*角色[：:]|$)`, 'i');
-                    const match = fullText.match(regex);
-                    if (match) map[name] = match[0];
-                } catch(err) {}
+                if (!name) return;
+                const safeName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                // 兼容：### 角色：【路知遥】、### 角色: 路知遥、### 【路知遥】 等各类输出
+                const re = new RegExp(`(?:###|##|#|==|【|\\n|^)[^\\n]*?(?:角色[：:]*|Character[：:]*|【)*\\s*[【\\[]?${safeName}[】\\]]?`, 'i');
+                const idx = fullText.search(re);
+                if (idx !== -1) {
+                    positions.push({ name: name, index: idx });
+                } else {
+                    const fallbackIdx = fullText.indexOf(name);
+                    if (fallbackIdx !== -1) positions.push({ name: name, index: fallbackIdx });
+                }
             });
+
+            // 检查关系网位置
+            const relRe = /(?:###|##|#|==|【|\n)[^\n]*?(?:关系网|羁绊|相互关系|relations)/i;
+            const relIdx = fullText.search(relRe);
+            if (relIdx !== -1) {
+                positions.push({ name: '关系网', index: relIdx });
+            }
+
+            // 按文本先后顺序排序截取
+            positions.sort((a, b) => a.index - b.index);
+
+            for (let i = 0; i < positions.length; i++) {
+                const current = positions[i];
+                const nextIndex = (i + 1 < positions.length) ? positions[i + 1].index : fullText.length;
+                let subContent = fullText.substring(current.index, nextIndex).trim();
+                if (subContent) {
+                    if (!subContent.startsWith('#此角色卡') && current.name !== '关系网') {
+                        subContent = WATERMARK + subContent;
+                    }
+                    map[current.name] = subContent;
+                }
+            }
+
+            // 兜底保障
+            memberNames.forEach(name => {
+                if (!map[name]) {
+                    map[name] = fullText;
+                }
+            });
+
             return map;
         }
 
         function renderMultiSubTabs(tabContainerId, streamBoxId, memberNames) {
             const bar = document.getElementById(tabContainerId);
             bar.style.display = 'flex';
-            bar.innerHTML = `<div class="multi-sub-tab active" onclick="switchMultiSubTab('${tabContainerId}', '${streamBoxId}', '全览')">全部总览</div>` + 
-                memberNames.map(n => `<div class="multi-sub-tab" onclick="switchMultiSubTab('${tabContainerId}', '${streamBoxId}', '${n}')">${n}</div>`).join('');
+            let tabsHtml = `<div class="multi-sub-tab active" onclick="switchMultiSubTab('${tabContainerId}', '${streamBoxId}', '全览')">全部总览</div>`;
+            memberNames.forEach(n => {
+                tabsHtml += `<div class="multi-sub-tab" onclick="switchMultiSubTab('${tabContainerId}', '${streamBoxId}', '${n}')">${n}</div>`;
+            });
+            if (parsedMultiSubContents['关系网']) {
+                tabsHtml += `<div class="multi-sub-tab" onclick="switchMultiSubTab('${tabContainerId}', '${streamBoxId}', '关系网')">关系网</div>`;
+            }
+            bar.innerHTML = tabsHtml;
         }
 
         function switchMultiSubTab(tabContainerId, streamBoxId, tabName) {
             document.querySelectorAll(`#${tabContainerId} .multi-sub-tab`).forEach(t => {
-                t.classList.toggle('active', t.innerText.trim() === tabName || (tabName === '全览' && t.innerText.includes('全部总览')));
+                const tName = t.innerText.trim();
+                t.classList.toggle('active', tName === tabName || (tabName === '全览' && tName.includes('全部总览')));
             });
             const sb = document.getElementById(streamBoxId);
             if (parsedMultiSubContents[tabName]) {
                 sb.innerText = parsedMultiSubContents[tabName];
+            } else if (tabName === '全览') {
+                sb.innerText = parsedMultiSubContents['全览'] || '';
             }
         }
 
@@ -3643,16 +3791,27 @@ ${activeTemplate}
         function regenerateCharacter() { document.getElementById('char-stream-box').innerText = ''; generateCharacter(); }
         async function saveCharWithoutEdit() { 
             let newCard;
+            const fullText = parsedMultiSubContents['全览'] || document.getElementById('char-stream-box').innerText;
             if (isMultiCharStandard) {
                 const groupName = document.getElementById('multi-char-group-name').value.trim() || "多人组合群像卡";
                 const validMembers = multiStandardMembers.filter(m => m.name.trim() !== '');
+                
+                // 核心：为每个角色存储属于他自己的单独人设文本
+                const subCards = validMembers.map(m => ({
+                    name: m.name,
+                    avatar: m.avatar,
+                    content: parsedMultiSubContents[m.name] || fullText
+                }));
+                const relationsText = parsedMultiSubContents['关系网'] || document.getElementById('multi-char-relations-input')?.value || '';
+
                 newCard = {
                     id: Date.now(),
                     name: groupName,
                     isMulti: true,
-                    members: validMembers.map(m => ({ name: m.name, avatar: m.avatar })),
+                    members: subCards,
+                    relationsText: relationsText,
                     avatar: validMembers[0]?.avatar || '',
-                    content: document.getElementById('char-stream-box').innerText,
+                    content: fullText,
                     worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
                     ifLines: [],
                     folder: '首页',
@@ -3664,7 +3823,7 @@ ${activeTemplate}
                     name: document.getElementById('char-name-input').value.trim() || "未命名", 
                     avatar: state.tempAvatarStr, 
                     isMulti: false,
-                    content: document.getElementById('char-stream-box').innerText, 
+                    content: fullText, 
                     worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] }, 
                     ifLines: [], 
                     folder: '首页', 
@@ -3679,7 +3838,49 @@ ${activeTemplate}
             document.getElementById('wb-prompt-card').style.display = 'block'; 
         }
         function enterCharEditMode() { document.getElementById('char-stream-box').style.display = 'none'; document.getElementById('post-gen-action-row').style.display = 'none'; document.getElementById('avatar-edit-textarea').value = document.getElementById('char-stream-box').innerText; document.getElementById('post-edit-panel').style.display = 'block'; }
-        async function saveCharWithEdit() { const newCard = { id: Date.now(), name: document.getElementById('char-name-input').value.trim() || "已微调", avatar: state.tempAvatarStr, content: document.getElementById('avatar-edit-textarea').value, worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] }, ifLines: [], folder: '首页', tags: [] }; state.cards.unshift(newCard); await saveData(); renderCardList('首页'); tempGeneratedCard = newCard.id; document.getElementById('post-edit-panel').style.display = 'none'; document.getElementById('wb-prompt-card').style.display = 'block'; }
+        async function saveCharWithEdit() { 
+            const editedText = document.getElementById('avatar-edit-textarea').value;
+            let newCard;
+            if (isMultiCharStandard) {
+                const groupName = document.getElementById('multi-char-group-name').value.trim() || "已微调多人卡";
+                const validMembers = multiStandardMembers.filter(m => m.name.trim() !== '');
+                const subCards = validMembers.map(m => ({
+                    name: m.name,
+                    avatar: m.avatar,
+                    content: parsedMultiSubContents[m.name] || editedText
+                }));
+                newCard = { 
+                    id: Date.now(), 
+                    name: groupName, 
+                    isMulti: true,
+                    members: subCards,
+                    avatar: validMembers[0]?.avatar || '', 
+                    content: editedText, 
+                    worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] }, 
+                    ifLines: [], 
+                    folder: '首页', 
+                    tags: ['多人卡'] 
+                };
+            } else {
+                newCard = { 
+                    id: Date.now(), 
+                    name: document.getElementById('char-name-input').value.trim() || "已微调", 
+                    avatar: state.tempAvatarStr, 
+                    isMulti: false,
+                    content: editedText, 
+                    worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] }, 
+                    ifLines: [], 
+                    folder: '首页', 
+                    tags: [] 
+                };
+            }
+            state.cards.unshift(newCard); 
+            await saveData(); 
+            renderCardList('首页'); 
+            tempGeneratedCard = newCard.id; 
+            document.getElementById('post-edit-panel').style.display = 'none'; 
+            document.getElementById('wb-prompt-card').style.display = 'block'; 
+        }
         function resetMainPage() { document.getElementById('char-name-input').value = ''; document.getElementById('char-direction').value = ''; document.getElementById('avatar-preview').style.display = 'none'; document.getElementById('char-stream-box').style.display = 'none'; document.getElementById('wb-prompt-card').style.display = 'none'; state.tempAvatarStr = ''; }
         function skipWorldbook() { switchView('view-char-preview'); }
         function startWorldbookCascade() { switchView('view-world-book'); document.getElementById('wb-char-select').value = tempGeneratedCard; }
@@ -3826,34 +4027,44 @@ ${activeTemplate}
                 });
                 let isMulti = card.isMulti || (card.tags && card.tags.includes('多人卡'));
                 let multiMembersHtml = '';
+                let multiExportsHtml = '';
+
                 if (isMulti && card.members && card.members.length > 0) {
-                    multiMembersHtml = `<div style="display:flex; gap:8px; margin: 8px 0; overflow-x:auto; padding-bottom:4px;">
+                    multiMembersHtml = `<div style="display:flex; gap:6px; margin: 8px 0; overflow-x:auto; padding-bottom:4px;">
                         ${card.members.map(m => `
                             <div style="display:flex; align-items:center; gap:4px; background:rgba(0,0,0,0.03); padding:3px 8px; border-radius:8px; border:1px solid var(--border-subtle);">
-                                ${m.avatar ? `<img src="${m.avatar}" style="width:20px; height:20px; border-radius:50%; object-fit:cover;">` : ''}
-                                <span style="font-size:11px; font-weight:500;">${m.name}</span>
+                                ${m.avatar ? `<img src="${m.avatar}" style="width:18px; height:18px; border-radius:50%; object-fit:cover;">` : ''}
+                                <span style="font-size:11px; font-weight:600;">${m.name}</span>
                             </div>
                         `).join('')}
                     </div>`;
+
+                    // 每个子角色的独立导出按键
+                    multiExportsHtml = card.members.map(m => 
+                        `<button class="btn-small" onclick="event.stopPropagation(); exportSingleSubCharOfMulti(${card.id}, '${m.name.replace(/'/g, "\\'")}')">导出: ${m.name}</button>`
+                    ).join('');
                 }
 
                 let wbHtml = `<div class="export-row" style="margin-top:10px;">
-                    <button class="btn-small" onclick="event.stopPropagation(); exportCardFile(${card.id}, 'char')">${isMulti ? '导出多人卡人设' : '导出人设'}</button>
+                    ${isMulti ? multiExportsHtml : `<button class="btn-small" onclick="event.stopPropagation(); exportCardFile(${card.id}, 'char')">导出人设</button>`}
+                    ${isMulti && card.relationsText ? `<button class="btn-small" onclick="event.stopPropagation(); exportMultiRelationsFile(${card.id})">导出: 关系网</button>` : ''}
                     ${card.worldbooks.city ? `<button class="btn-small" onclick="event.stopPropagation(); exportCardFile(${card.id}, 'city')">导出城市</button>` : ''}
                     ${card.worldbooks.workplace ? `<button class="btn-small" onclick="event.stopPropagation(); exportCardFile(${card.id}, 'workplace')">导出地点</button>` : ''}
                     ${card.worldbooks.supplements.length ? `<button class="btn-small" onclick="event.stopPropagation(); exportCardFile(${card.id}, 'supp')">导出补充</button>` : ''}
-                    ${card.worldbooks.relations.length ? `<button class="btn-small" onclick="event.stopPropagation(); exportCardFile(${card.id}, 'rel')">导出关系网</button>` : ''}
+                    ${card.worldbooks.relations.length ? `<button class="btn-small" onclick="event.stopPropagation(); exportCardFile(${card.id}, 'rel')">导出世界书关系网</button>` : ''}
                     ${card.worldbooks.others.length ? `<button class="btn-small" onclick="event.stopPropagation(); exportCardFile(${card.id}, 'other')">导出其他设定</button>` : ''}
                     ${card.ifLines.length ? `<button class="btn-small" style="background:#555; color:#fff;" onclick="event.stopPropagation(); exportCardFile(${card.id}, 'ifchar')">导出if线人设</button>` : ''}
                     ${card.worldbooks.normal.length ? `<button class="btn-small" style="background:#555; color:#fff;" onclick="event.stopPropagation(); exportCardFile(${card.id}, 'normalwv')">普通世界观导出</button>` : ''}
                     ${card.worldbooks.ifWorldviews.length ? `<button class="btn-small" style="background:#555; color:#fff;" onclick="event.stopPropagation(); exportCardFile(${card.id}, 'ifwv')">if线世界观导出</button>` : ''}
-                    <button class="btn-small" style="background:#222; color:#fff; width:100%; margin-top:4px;" onclick="event.stopPropagation(); exportAllForCard(${card.id})">一键打包所有导出</button>
+                    <button class="btn-small" style="background:#222; color:#fff; width:100%; margin-top:4px;" onclick="event.stopPropagation(); exportAllForCard(${card.id})">${isMulti ? '一键分文件连续导出全部人物' : '一键打包所有导出'}</button>
                 </div>`;
+
                 let tagsHtml = (card.tags || []).map(t => `<span style="font-size:10px; font-weight:bold; color:var(--accent-danger); margin-right:6px;">#${t}</span>`).join('');
                 item.innerHTML = `<div class="list-header"><div style="display:flex; align-items:center; gap:10px; width:100%;">${card.avatar ? `<img src="${card.avatar}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">` : ''}<div style="flex:1;"><div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">${isMulti ? '<span class="tag-badge-multi">#多人卡</span>' : ''}<span style="font-size:15px; font-weight:bold;">${card.name}</span>${tagsHtml}<button class="btn-small" style="padding:2px 6px; font-size:9px;" onclick="event.stopPropagation(); manageCardTags(${card.id})">+标签</button></div><span style="font-size:9px; color:var(--text-light); background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:4px; display:inline-block; margin-top:4px;">${card.folder || '首页'}</span></div></div></div>${multiMembersHtml}<div class="list-desc">${card.content.substring(0, 50)}...</div>
                 <details style="font-size:12px; color:var(--text-muted); margin-bottom:8px;" ${isCardBatchMode ? 'disabled' : ''} onclick="event.stopPropagation();">
                     <summary style="outline:none; cursor:pointer; margin-bottom:8px; font-weight:500;">展开查看配套数据与世界书</summary>
                     <div style="padding-left:12px; display:flex; flex-direction:column; gap:4px; border-left:2px solid var(--border-subtle);">
+                        ${isMulti ? `<div>包含成员: ${card.members.map(m=>m.name).join('、')}</div>` : ''}
                         <div>城市设定: ${card.worldbooks.city ? '已生成' : '无'}</div>
                         <div>工作地点: ${card.worldbooks.workplace ? '已生成' : '无'}</div>
                         <div>人设补充: ${card.worldbooks.supplements.length} 份</div>
@@ -4153,9 +4364,39 @@ ${activeTemplate}
                 for (let i = 0; i < q.length; i++) { await new Promise(r => setTimeout(r, 450)); downloadCardFile(q[i].data, q[i].name); }
             });
         }
+        function exportSingleSubCharOfMulti(cardId, subName) {
+            const card = state.cards.find(c => c.id == cardId);
+            if (!card) return;
+            let targetContent = card.content;
+            if (card.members) {
+                const sub = card.members.find(m => m.name === subName);
+                if (sub && sub.content) targetContent = sub.content;
+            }
+            downloadCardFile(targetContent, `${card.name}_${subName}_人设`);
+        }
+
+        function exportMultiRelationsFile(cardId) {
+            const card = state.cards.find(c => c.id == cardId);
+            if (!card || !card.relationsText) return alert("暂无关系网数据！");
+            downloadCardFile(card.relationsText, `${card.name}_多人关系网`);
+        }
+
         async function exportAllForCard(id) {
             const card = state.cards.find(c => c.id == id); if (!card) return; let dq = [];
-            dq.push({ data: card.content, name: `${card.name}_人设` });
+            const isMulti = card.isMulti || (card.tags && card.tags.includes('多人卡'));
+
+            if (isMulti && card.members && card.members.length > 0) {
+                // 多人卡：每个角色独立生成一份专属文件！
+                card.members.forEach(m => {
+                    dq.push({ data: m.content || card.content, name: `${card.name}_${m.name}_人设` });
+                });
+                if (card.relationsText) {
+                    dq.push({ data: card.relationsText, name: `${card.name}_多人关系网` });
+                }
+            } else {
+                dq.push({ data: card.content, name: `${card.name}_人设` });
+            }
+
             if (card.worldbooks.city) dq.push({ data: card.worldbooks.city, name: `${card.name}_世界书_城市` });
             if (card.worldbooks.workplace) dq.push({ data: card.worldbooks.workplace, name: `${card.name}_世界书_工作地点` });
             (card.worldbooks.supplements || []).forEach((s, i) => dq.push({ data: s, name: `${card.name}_世界书_人设补充_${i+1}` }));
@@ -4165,9 +4406,12 @@ ${activeTemplate}
             (card.worldbooks.normal || []).forEach((nw, i) => dq.push({ data: nw, name: `${card.name}_普通世界观_${i+1}` }));
             (card.worldbooks.ifWorldviews || []).forEach((iw) => dq.push({ data: iw.content, name: `${card.name}_if线世界观_${iw.tag}` }));
             
-            showDownloadProgress("全量打包下载", `即将为您一键打包导出 ${card.name} 的全部配套设定集文件（共 ${dq.length} 个），确认开始处理吗？`, true, async () => {
-                showDownloadAutoProgress("全量打包导出", "正在对全部设定集进行打包封装，请稍候...", 1800);
-                for (let i = 0; i < dq.length; i++) { await new Promise(r => setTimeout(r, 450)); downloadCardFile(dq[i].data, dq[i].name); }
+            showDownloadProgress("全量分文件导出", `即将为您连续导出 ${card.name} 的全部独立设定文件（共 ${dq.length} 个文件），确认开始下载吗？`, true, async () => {
+                showDownloadAutoProgress("全量打包导出", "正在逐份处理下载，请稍候...", 1800);
+                for (let i = 0; i < dq.length; i++) { 
+                    await new Promise(r => setTimeout(r, 450)); 
+                    downloadCardFile(dq[i].data, dq[i].name); 
+                }
             });
         }
         async function executeCardBatchDownload() {
@@ -6923,16 +7167,43 @@ ${activeTemplate}
         }
 
         async function saveOptionCharWithoutEdit() {
-            const newCard = {
-                id: Date.now(),
-                name: document.getElementById('char-option-name-input').value.trim() || "未命名",
-                avatar: tempOptionAvatarStr,
-                content: document.getElementById('char-option-stream-box').innerText,
-                worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
-                ifLines: [],
-                folder: '首页',
-                tags: []
-            };
+            let newCard;
+            const fullText = parsedMultiSubContents['全览'] || document.getElementById('char-option-stream-box').innerText;
+            if (isMultiCharOption) {
+                const groupName = document.getElementById('multi-char-option-group-name').value.trim() || "多人选项组合卡";
+                const subCards = multiOptionMembers.map(m => ({
+                    name: m.name,
+                    avatar: m.avatar,
+                    content: parsedMultiSubContents[m.name] || fullText
+                }));
+                const relationsText = parsedMultiSubContents['关系网'] || document.getElementById('multi-option-relations-input')?.value || '';
+
+                newCard = {
+                    id: Date.now(),
+                    name: groupName,
+                    isMulti: true,
+                    members: subCards,
+                    relationsText: relationsText,
+                    avatar: multiOptionMembers[0]?.avatar || '',
+                    content: fullText,
+                    worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
+                    ifLines: [],
+                    folder: '首页',
+                    tags: ['多人卡']
+                };
+            } else {
+                newCard = {
+                    id: Date.now(),
+                    name: document.getElementById('char-option-name-input').value.trim() || "未命名",
+                    avatar: tempOptionAvatarStr,
+                    isMulti: false,
+                    content: fullText,
+                    worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
+                    ifLines: [],
+                    folder: '首页',
+                    tags: []
+                };
+            }
             state.cards.unshift(newCard);
             await saveData();
             renderCardList('首页');
@@ -6950,16 +7221,40 @@ ${activeTemplate}
         }
 
         async function saveOptionCharWithEdit() {
-            const newCard = {
-                id: Date.now(),
-                name: document.getElementById('char-option-name-input').value.trim() || "已微调",
-                avatar: tempOptionAvatarStr,
-                content: document.getElementById('avatar-option-edit-textarea').value,
-                worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
-                ifLines: [],
-                folder: '首页',
-                tags: []
-            };
+            const val = document.getElementById('avatar-option-edit-textarea').value;
+            let newCard;
+            if (isMultiCharOption) {
+                const groupName = document.getElementById('multi-char-option-group-name').value.trim() || "微调多人选项卡";
+                const subCards = multiOptionMembers.map(m => ({
+                    name: m.name,
+                    avatar: m.avatar,
+                    content: parsedMultiSubContents[m.name] || val
+                }));
+                newCard = {
+                    id: Date.now(),
+                    name: groupName,
+                    isMulti: true,
+                    members: subCards,
+                    avatar: multiOptionMembers[0]?.avatar || '',
+                    content: val,
+                    worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
+                    ifLines: [],
+                    folder: '首页',
+                    tags: ['多人卡']
+                };
+            } else {
+                newCard = {
+                    id: Date.now(),
+                    name: document.getElementById('char-option-name-input').value.trim() || "已微调",
+                    avatar: tempOptionAvatarStr,
+                    isMulti: false,
+                    content: val,
+                    worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
+                    ifLines: [],
+                    folder: '首页',
+                    tags: []
+                };
+            }
             state.cards.unshift(newCard);
             await saveData();
             renderCardList('首页');
