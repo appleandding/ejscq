@@ -3599,36 +3599,59 @@ Proactive & Non-proactive：
             const map = { '全览': fullText || '' };
             if (!fullText || !memberNames || memberNames.length === 0) return map;
 
-            // 定位每个角色在全文中的起始位置
+            // 1. 定位每位角色的正确定位点（严格以标题或 name: 作为锚点，杜绝正文中提及他人的误判）
             const positions = [];
             memberNames.forEach(name => {
                 if (!name) return;
                 const safeName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                // 兼容：### 角色：【路知遥】、### 角色: 路知遥、### 【路知遥】 等各类输出
-                const re = new RegExp(`(?:###|##|#|==|【|\\n|^)[^\\n]*?(?:角色[：:]*|Character[：:]*|【)*\\s*[【\\[]?${safeName}[】\\]]?`, 'i');
-                const idx = fullText.search(re);
-                if (idx !== -1) {
-                    positions.push({ name: name, index: idx });
+                
+                // 锚点 A: ### 角色：【路知遥】 或 ### 角色: 路知遥 或 ## 【路知遥】
+                const reHeader = new RegExp('(?:^|\\n)\\s*(?:###|##|#|==|\\*{2,3})\\s*(?:角色|人物|Character)?[：:\\s]*[【\\[（(]?\\s*' + safeName + '\\s*[】\\]）)]?', 'i');
+                // 锚点 B: name: 路知遥 或 姓名：路知遥 或 【角色名称】路知遥
+                const reNameField = new RegExp('(?:^|\\n)\\s*(?:name|姓名|名字|【角色名称】|Character Name)[：:\\s]+[【\\[（(]?\\s*' + safeName + '\\b', 'i');
+
+                let matchIdx = -1;
+                const mHeader = fullText.search(reHeader);
+                if (mHeader !== -1) {
+                    matchIdx = mHeader;
                 } else {
-                    const fallbackIdx = fullText.indexOf(name);
-                    if (fallbackIdx !== -1) positions.push({ name: name, index: fallbackIdx });
+                    const mField = fullText.search(reNameField);
+                    if (mField !== -1) {
+                        // 若匹配到 name 字段，向上回溯查找是否有 *<start 或 ### 起始标记
+                        const beforeText = fullText.substring(Math.max(0, mField - 150), mField);
+                        const startTagIdx = beforeText.lastIndexOf('*<start');
+                        if (startTagIdx !== -1) {
+                            matchIdx = (mField - 150) + startTagIdx;
+                        } else {
+                            matchIdx = mField;
+                        }
+                    }
+                }
+
+                if (matchIdx !== -1) {
+                    if (fullText[matchIdx] === '\n') matchIdx += 1;
+                    positions.push({ name: name, index: matchIdx });
                 }
             });
 
-            // 检查关系网位置
-            const relRe = /(?:###|##|#|==|【|\n)[^\n]*?(?:关系网|羁绊|相互关系|relations)/i;
+            // 2. 定位关系网章节
+            const relRe = /(?:^|\n)\s*(?:###|##|#|==|【|\*{2,3})?[^\n]*?(?:关系网|相对关系|relative network|羁绊与关系|相互关系|各角色关系)[^\n]*/i;
             const relIdx = fullText.search(relRe);
             if (relIdx !== -1) {
-                positions.push({ name: '关系网', index: relIdx });
+                let rIdx = relIdx;
+                if (fullText[rIdx] === '\n') rIdx += 1;
+                positions.push({ name: '关系网', index: rIdx });
             }
 
-            // 按文本先后顺序排序截取
+            // 按文本先后顺序排序
             positions.sort((a, b) => a.index - b.index);
 
+            // 3. 从上一个角色起点切到下一个角色起点（从name开始一直到下一个角色name）
             for (let i = 0; i < positions.length; i++) {
                 const current = positions[i];
                 const nextIndex = (i + 1 < positions.length) ? positions[i + 1].index : fullText.length;
                 let subContent = fullText.substring(current.index, nextIndex).trim();
+                
                 if (subContent) {
                     if (!subContent.startsWith('#此角色卡') && current.name !== '关系网') {
                         subContent = WATERMARK + subContent;
@@ -3688,17 +3711,19 @@ Proactive & Non-proactive：
                 if (validMembers.length < 2) return alert("请至少填写2个多人角色的名字与大纲！");
 
                 let sysPrompt = `你是一个专业的多人角色群像卡创作大师。请为用户生成包含【${validMembers.map(m=>m.name).join('、')}】共 ${validMembers.length} 位角色的组合人设卡。
-要求：
-1. 必须一次性分别输出每一位角色的完整属性，并清晰使用 "### 角色：【角色名字】" 作为分割标题。
-2. 每一个角色的排版模板都必须完全遵守：
+【必须严格遵守的排版规范】：
+1. 必须一次性分别输出每一位角色的完整人设。
+2. 每一个角色必须独占一个段落，且必须严格以 "### 角色：【角色名字】" 作为开头！
+3. 每个角色的人设内部必须有独立的完整模板骨架（包含从 *<start…… 到 …end>* 的完整闭环）：
 ${activeTemplate}
-3. 在全部角色末尾附上【多人角色相互羁绊与关系网剖析】。`;
+4. 严禁把多个角色的属性混写在同一个模板里！必须一个角色写完闭环后再开始写下一个角色！
+5. 在全部角色的人设全部写完后，在最后单独以 "### 多人关系网：" 章节输出角色间的相互羁绊与关系。`;
 
                 let userContent = "";
                 if (state.jailbreakEnabled && state.jailbreakPrompt) userContent += `[破限指令]：\n${state.jailbreakPrompt}\n\n`;
                 userContent += `【多人卡组合名】：${groupName}\n【各角色设定大纲】：\n`;
                 validMembers.forEach((m, i) => {
-                    userContent += `角色${i+1}：${m.name}\n人设大纲：${m.direction || '性格鲜明，配合整体群像'}\n\n`;
+                    userContent += `角色${i+1}【${m.name}】：\n人设大纲：${m.direction || '性格鲜明，配合整体群像'}\n\n`;
                 });
                 if (rels) userContent += `【角色间关系网】：\n${rels}\n`;
 
@@ -6916,11 +6941,13 @@ ${getCharTemplate(true)}`;
                 if (multiOptionMembers.length < 2) return alert("请至少暂存 2 位多人选项角色再点击生成！");
 
                 let sysPrompt = `你是一个专业的多人角色群像卡创作大师。请基于提供的各角色标签设定，为用户一次性生成包含【${multiOptionMembers.map(m=>m.name).join('、')}】共 ${multiOptionMembers.length} 位角色的组合人设卡。
-要求：
-1. 必须一次性分别输出每一位角色的完整属性，并清晰使用 "### 角色：【角色名字】" 作为分割标题。
-2. 每一个角色的排版模板都必须完全遵守：
+【必须严格遵守的排版规范】：
+1. 必须一次性分别输出每一位角色的完整人设。
+2. 每一个角色必须独占一个段落，且必须严格以 "### 角色：【角色名字】" 作为开头！
+3. 每个角色的人设内部必须有独立的完整模板骨架（包含从 *<start…… 到 …end>* 的完整闭环）：
 ${activeTemplate}
-3. 在全部角色末尾附上【多人角色相互羁绊与关系网剖析】。`;
+4. 严禁把多个角色的属性混写在同一个模板里！必须一个角色写完闭环后再开始写下一个角色！
+5. 在全部角色的人设全部写完后，在最后单独以 "### 多人关系网：" 章节输出角色间的相互羁绊与关系。`;
 
                 let userContent = "";
                 if (state.jailbreakEnabled && state.jailbreakPrompt) userContent += `[破限指令]：\n${state.jailbreakPrompt}\n\n`;
