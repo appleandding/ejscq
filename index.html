@@ -2185,15 +2185,15 @@ age：年龄
         </div>
     </div>
 
-    <!-- 20. 工坊全功能详细教程指南 App -->
+    <!-- 21. 工坊全功能详细教程指南 App -->
     <div id="view-tutorial-guide" class="view-container">
         <div class="app-header">
             <button class="back-btn" onclick="backToDashboard()"><svg><path d="M15 19l-7-7 7-7"/></svg></button>
-            <span class="app-title">工坊全流程教程指南 (v2.1.3)</span>
+            <span class="app-title">工坊全流程教程指南 (v2.1.9)</span>
         </div>
         <div style="margin-top: 16px;">
             <div class="engine-card" style="padding: 14px; margin-bottom: 12px; border-left: 4px solid #222;">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">📖 耳机の生成工坊·全功能官方使用手册 (v2.1.3)</div>
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">📖 耳机の生成工坊·全功能官方使用手册 (v2.1.9)</div>
                 <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
                     点击下方各个 App 卡片，即可展开查看每个应用的最新用法、生成技巧与联动逻辑！
                 </div>
@@ -2355,6 +2355,20 @@ age：年龄
                     ④ 保存后全自动同步插入对应生成器的模板选择菜单中，随时直接套用！
                 </div>
             </details>
+
+            <!-- 20. 提示词 -->
+            <details class="engine-card" style="outline: none; margin-bottom: 10px;">
+                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">20. 提示词 (四分区反八股规则中枢与自定义库)</summary>
+                <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); line-height: 1.6; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
+                    <b>【功能概述】</b>：位于第二页，提供人设、开场白、世界书、通用四分区提示词与反八股规则管控中枢。<br>
+                    <b>【操作步骤】</b>：<br>
+                    ① <b>四分区独立管理</b>：点击人设/开场白/世界书/通用四大卡片进入专属详情页；<br>
+                    ② <b>内置模式与独立开关</b>：默认使用官方内置反八股与描写规范，每一条均配备 iOS 独立开关控制是否生效；<br>
+                    ③ <b>一键切换自定义模式</b>：点击「切换为自定义提示词」，内置规范将自动隐藏停用，并展开空白编辑区供用户自由自建提示词；<br>
+                    ④ <b>自建条目库与一键加载</b>：填写名称与规则保存后，形成自建条目库，支持随时单独开关、一键加载到输入框微调或删除；<br>
+                    ⑤ <b>全链路自动注入</b>：开启的提示词规则在生成对应 Char、开场白或世界书时会自动全链路注入大模型执行！
+                </div>
+            </details>
         </div>
     </div>
 
@@ -2364,18 +2378,22 @@ age：年龄
         <div class="modal-card" style="max-width: 440px; max-height: 85vh;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <span style="font-size: 11px; font-weight: bold; color: #222; background: rgba(0,0,0,0.06); padding: 2px 8px; border-radius: 6px;">工坊重要更新日志</span>
-                <span style="font-size: 10px; color: var(--text-light);">版本 v2.1.3</span>
+                <span style="font-size: 10px; color: var(--text-light);">版本 v2.1.9</span>
             </div>
-            <h3 class="modal-title" style="margin-bottom: 12px; font-size: 16px;">耳机の生成工坊 v2.1.3 更新与修复公告</h3>
+            <h3 class="modal-title" style="margin-bottom: 12px; font-size: 16px;">✨ 耳机の生成工坊 v2.1.9 升级公告</h3>
             <div class="modal-content-area" style="font-size: 12px; line-height: 1.7; color: var(--text-muted); white-space: pre-wrap; padding-right: 4px;">
-<b>🛠️ 【紧急 Bug 修复】：</b>
-1. <b>修复全屏按钮瘫痪问题</b>：彻底清除了底层代码中重复粘贴导致的语法解析错误，完全恢复了顶栏时间/电量显示及全页面所有按钮的点击响应；
-2. <b>修复手机端触控冲突</b>：优化了移动端长按判定与滑动逻辑，解决了误触进入多选或图片拖拽阻断手势的问题。
+<b>🛠️ 【重点 Bug 修复】：</b>
+1. <b>修复多人选项自建模板未读取问题</b>：彻底清除了底层旧版冗余函数，恢复全模板解析引擎，自建模板在多人模式下 100% 精准识别并输出；
+2. <b>修复多人模式名字输入框重叠</b>：选项生成切换至多人模式时，自动隐藏多余的单人名字输入框，界面更加纯净统一；
+3. <b>修复提示词板块角标折行</b>：移除了 Emoji 并锁定文本在一行并列对齐显示。
 
-<b>✨ 【本次版本更新与优化】：</b>
-1. <b>移除 User 生成器旧版提示</b>：删除了原有的“还没内置模板”提示栏，现已全面打通【模板自定义】App（自建模板支持保存为 Char / User / 双向通用并自动挂载到对应生成器中）；
-2. <b>教程区全面升级 (v2.1.3)</b>：第二页「工坊教程」App 内容已全部同步更新，收录了全 App 最新实装功能的使用技巧与联动指引；
-3. <b>优化群像与文风联动</b>：提升了多人 Char 群像生成、开场白多人交互及文风描写加持的生成稳定性。
+<b>✨ 【重磅新增与功能优化】：</b>
+1. <b>全新【提示词】App 正式入驻第二页</b>：
+   · 划分为「人设提示词」、「开场白提示词」、「世界书提示词」、「通用提示词」四大独立分区；
+   · <b>内置与自定义双模式切换</b>：点击「切换为自定义提示词」后内置规范自动隐藏停用，展开专属空白输入区；
+   · <b>支持多条目无限追加与保存</b>：输入名称与规则保存后形成个人自建库，支持单独开关控制、一键加载到输入框微调或删除；
+   · <b>全链路自动拦截八股</b>：开启的规则在生成对应人设、开场白、世界书时会自动全链路注入大模型执行！
+2. <b>【工坊教程】App 同步收录最新指南</b>：新增提示词 App 详细图文用法解析。
             </div>
             <div class="modal-footer" style="margin-top: 16px;">
                 <button class="btn btn-primary" style="width: 100%; padding: 12px;" onclick="closeUpdateNoticeModal()">我知道了，开始创作</button>
@@ -3140,16 +3158,16 @@ Proactive & Non-proactive：
         let tempIfAvatarStr = ''; let tempIfCharText = ''; let tempIfCharId = null; let tempIfTag = '';
         let currentWvTab = 'normal'; let isWvNormalBound = true; let tempWvContentText = '';
 
-        // ==================== 更新日志弹窗控制器 (v2.1.3 专属新弹窗) ====================
+        // ==================== 更新日志弹窗控制器 (v2.1.9 专属新弹窗) ====================
         function checkAndShowUpdateNotice() {
-            if (!state.update_v213_shown) {
+            if (!state.update_v219_shown) {
                 document.getElementById('update-notice-modal').style.display = 'flex';
             }
         }
 
         async function closeUpdateNoticeModal() {
             document.getElementById('update-notice-modal').style.display = 'none';
-            state.update_v213_shown = true;
+            state.update_v219_shown = true;
             await saveData();
         }
 
