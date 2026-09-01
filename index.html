@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -890,14 +890,14 @@
 
                 <!-- 人设补充搭配 (头像上传 + 大方向手写补充) -->
                 <div class="form-group">
-                    <label>人设补充搭配（选填）：</label>
-                    <div class="upload-row">
-                        <div class="upload-box" onclick="document.getElementById('avatar-option-upload').click()">
-                            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>上传头像<br>(PNG/JPG)
+                    <label id="char-option-direction-label">人设补充搭配（选填）：</label>
+                    <div class="upload-row" id="char-option-upload-row">
+                        <div class="upload-box" id="avatar-option-upload-box" onclick="document.getElementById('avatar-option-upload').click()">
+                            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span id="avatar-option-upload-text">上传头像<br>(PNG/JPG)</span>
                             <input type="file" id="avatar-option-upload" onclick="event.stopPropagation()" accept="image/*" onchange="previewOptionAvatar(event)">
                             <img id="avatar-option-preview" class="upload-img-preview">
                         </div>
-                        <div class="direction-box">
+                        <div class="direction-box" id="char-option-direction-box">
                             <textarea id="char-option-direction" placeholder="在此手动输入额外特色设定、穿搭特点、或者恋人引导倾向等补充搭配细节（选填，大纲已模块化，不写也可一键生成哦）..."></textarea>
                         </div>
                     </div>
@@ -998,15 +998,20 @@
 
         <!-- 分区一：User人设生成面板 -->
         <div id="user-profile-panel">
-            <div class="engine-card" style="margin-top: 16px; border: 1px dashed var(--border-glass); text-align: center; padding: 12px;">
-                <div style="font-size:12px; font-weight:bold; color:var(--text-muted); line-height: 1.5;">现在user生成还没内置模板哦，这个主要就看模型啦，后续更新可能会出固定内置模板哒~</div>
-            </div>
-            <div class="engine-card">
+            <div class="engine-card" style="margin-top: 16px;">
                 <div class="form-group" id="user-char-select-group">
-                <label>选择与之建立纽带的现有角色（Char）：</label>
-                <select class="select-box" id="user-bound-char-select"></select>
-            </div>
-            <button class="btn btn-secondary" id="btn-toggle-user-bind" onclick="toggleUserBindState()" style="width: 100%; margin-bottom: 16px; font-size: 12px; padding: 10px;">不绑定char生成</button>
+                    <label>选择与之建立纽带的现有角色（Char）：</label>
+                    <select class="select-box" id="user-bound-char-select"></select>
+                </div>
+                <button class="btn btn-secondary" id="btn-toggle-user-bind" onclick="toggleUserBindState()" style="width: 100%; margin-bottom: 14px; font-size: 12px; padding: 10px;">不绑定char生成</button>
+
+                <!-- 新增：User 人设模板选择 -->
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label>选择 User 人设模板（支持模板自定义App中自建）：</label>
+                    <select class="select-box" id="user-template-select">
+                        <option value="none">不使用固定模板（大模型自由发挥）</option>
+                    </select>
+                </div>
             <div style="margin-bottom: 12px;">
                 <div style="font-size:10px; margin-bottom: 4px; font-weight:bold; color: var(--text-light);">选择User名字：</div>
                 <input type="text" id="user-name-input" class="input-text" style="margin-bottom: 4px;" placeholder="在此填写User的名字（如：岁暮）">
@@ -1975,7 +1980,23 @@ age：年龄
         </div>
     </div>
 
-    <!-- 模态框合集：人设整理仓库 & 文风仓库 -->
+    <!-- 模态框合集：模板保存类型选择、人设整理仓库 & 文风仓库 -->
+    <div class="modal-overlay" id="template-save-type-modal" style="z-index: 4600;" onclick="closeTemplateSaveTypeModal()">
+        <div class="modal-card" style="max-width: 350px; text-align: center;" onclick="event.stopPropagation()">
+            <h3 class="modal-title" style="font-size: 16px; margin-bottom: 6px;">选择模板归属用途</h3>
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+                请选择此自定义模板将用于哪种角色的生成？
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn btn-primary" style="padding: 12px; font-size: 13px;" onclick="confirmSaveUserCustomTemplate('char')"> 保存为 Char 角色人设模板</button>
+                <button class="btn btn-primary" style="padding: 12px; font-size: 13px; background: #444;" onclick="confirmSaveUserCustomTemplate('user')"> 保存为 User 陪伴者模板</button>
+                <button class="btn btn-secondary" style="padding: 12px; font-size: 13px; font-weight: bold;" onclick="confirmSaveUserCustomTemplate('both')"> 两个都保存（双向通用）</button>
+            </div>
+            <div class="modal-footer" style="margin-top: 14px; justify-content: center;">
+                <button class="btn-small" onclick="closeTemplateSaveTypeModal()" style="padding: 4px 14px;">取消</button>
+            </div>
+        </div>
+    </div>
     <div class="modal-overlay" id="global-org-warehouse-modal" onclick="closeOrgWarehouse()">
         <div class="modal-card" style="height: 85vh; max-height: 700px;" onclick="event.stopPropagation()">
             <h3 class="modal-title">整理人设卡库</h3>
@@ -2004,61 +2025,61 @@ age：年龄
     <div id="view-tutorial-guide" class="view-container">
         <div class="app-header">
             <button class="back-btn" onclick="backToDashboard()"><svg><path d="M15 19l-7-7 7-7"/></svg></button>
-            <span class="app-title">工坊全流程教程指南</span>
+            <span class="app-title">工坊全流程教程指南 (v2.1.3)</span>
         </div>
         <div style="margin-top: 16px;">
             <div class="engine-card" style="padding: 14px; margin-bottom: 12px; border-left: 4px solid #222;">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">📖 耳机の生成工坊·全应用使用手册</div>
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">📖 耳机の生成工坊·全功能官方使用手册 (v2.1.3)</div>
                 <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
-                    点击下方各个 App 的折叠卡片，即可展开查看每个应用的具体用途、操作步骤与进阶技巧！
+                    点击下方各个 App 卡片，即可展开查看每个应用的最新用法、生成技巧与联动逻辑！
                 </div>
             </div>
 
             <!-- 1. uu生成器 -->
             <details class="engine-card" style="outline: none; margin-bottom: 10px;">
-                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">1. uu生成器 (User 人设与社交圈)</summary>
+                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">1. uu生成器 (User 人设定制与社交圈)</summary>
                 <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); line-height: 1.6; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
-                    <b>【功能概述】</b>：为你的玩家主角（User）定制专属人设，并能为 User 构建真实细腻的闺蜜/知己好友圈。<br>
+                    <b>【功能概述】</b>：为玩家主角（User）定制高维度陪伴人设，支持套用自建 User 模板，并能一键生成 1~5 位知心挚友圈。<br>
                     <b>【操作步骤】</b>：<br>
-                    ① <b>绑定/不绑定 Char</b>：选择目标角色的名字（若选多人卡则生成兼顾多方羁绊的 User），也可点击“不绑定char”进行独立生成；<br>
-                    ② 输入 User 名字、性格习惯或相处偏好，点击生成；<br>
-                    ③ 切换至“<b>User人际关系生成</b>”Tab，可一键批量为该 User 生成 1~5 位亲密知友与前尘羁绊故事。<br>
-                    <b>【保存位置】</b>：转入桌面「user预览」中管理与导出。
+                    ① <b>绑定/独立生成</b>：选择绑定的 Char（若选择多人卡，将生成能融入该多人羁绊的 User），或点击“不绑定char”自由发挥；<br>
+                    ② <b>User 模板选择</b>：支持下拉选择在【模板自定义】中保存的专属 User 模板，打造固定格式的玩家档案；<br>
+                    ③ <b>User 人际关系生成</b>：切换至分区二，选择目标 User 与期望人数（1~5人），一键推演闺蜜/发小/知己好友圈与前尘羁绊故事。<br>
+                    <b>【数据归档】</b>：转入桌面「user预览」中管理、导出 Word (.Docx) 或纯文本 (.Txt)。
                 </div>
             </details>
 
             <!-- 2. char生成器 -->
             <details class="engine-card" style="outline: none; margin-bottom: 10px;">
-                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">2. char生成器 (单人/多人/选项创作)</summary>
+                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">2. char生成器 (单人 / 多人 / 选项人设双引擎)</summary>
                 <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); line-height: 1.6; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
-                    <b>【功能概述】</b>：工坊核心角色创作引擎，支持普通大纲流与多标签点选流，内置耳机模板、吻我涙模板及自建模板。<br>
+                    <b>【功能概述】</b>：工坊核心角色创作引擎，支持大纲直出流与标签点选流，内置耳机模板、吻我涙模板及全部自建模板。<br>
                     <b>【操作步骤】</b>：<br>
-                    ① <b>单人模式</b>：填写名字与性格大纲，可上传头像并启用 AI 自动识别外貌，选择模板后生成；<br>
-                    ② <b>多人模式</b>：点击右上角“多人模式”，可添加多位角色及关系网，一次性生成多人群像卡，流式输出时可分 Tab 切换查看；<br>
-                    ③ <b>选项人设生成</b>：在分区二自由点选性别、性取向、年龄、塑形、性格与职业，支持自建总标签与小标签。<br>
-                    <b>【保存位置】</b>：保存进「char预览」，支持世界书级联生成。
+                    ① <b>单人模式</b>：填写名字、大纲，可上传头像并开启 AI 识图外貌填充，选择心仪模板生成；<br>
+                    ② <b>多人模式</b>：点击右上角“多人模式”，添加多位角色并填写相互关系，一次性生成群像卡；生成后支持子角色分 Tab 预览与独立导出；<br>
+                    ③ <b>选项人设生成</b>：切换至分区二，支持自由点选性别、性取向、年龄、塑形倾向、性格与职业，支持自建大分类与小标签。<br>
+                    <b>【数据归档】</b>：保存进「char预览」，支持世界书与开场白级联生成。
                 </div>
             </details>
 
             <!-- 3. 世界书生成器 -->
             <details class="engine-card" style="outline: none; margin-bottom: 10px;">
-                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">3. 世界书生成器 (人设配套 & 普通世界书)</summary>
+                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">3. 世界书生成器 (人设配套设定 & 普通世界书)</summary>
                 <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); line-height: 1.6; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
-                    <b>【功能概述】</b>：构建城市、工作地点、人设补充、关系网等设定集，支持导入外部本地卡，并提供独立普通世界书仓库。<br>
+                    <b>【功能概述】</b>：构建城市、工作地点、人设补充、关系网等设定集，支持外部本地卡导入，提供独立普通世界书仓库。<br>
                     <b>【操作步骤】</b>：<br>
-                    ① <b>人设配套世界书</b>：选择目标 Char，点击「城市设定」「工作地点」「人设补充」「关系网」等按钮分别生成，自动归档至该角色卡下；<br>
-                    ② <b>普通世界书</b>：切换分区二，输入大标题与规则大纲生成通用规则世界书，右上角 3D 纸箱仓库支持分组、多选与批量导出 Word/Txt。<br>
-                    ③ <b>本地卡导入</b>：支持上传本地 Docx/Txt 格式外部角色卡，自动解析转存。
+                    ① <b>人设配套世界书</b>：选择目标 Char，点击「城市设定」「工作地点」「人设补充」「关系网」等按钮分别生成，自动归档进该角色卡；<br>
+                    ② <b>普通世界书</b>：切换至分区二，输入大标题与规则大纲生成通用世界书，右上角 3D 纸箱仓库支持分组、多选与批量导出 Word/Txt；<br>
+                    ③ <b>外部卡导入</b>：支持上传本地 Docx/Txt 格式外部角色卡，自动解析转存。
                 </div>
             </details>
 
             <!-- 4. 生图功能 -->
             <details class="engine-card" style="outline: none; margin-bottom: 10px;">
-                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">4. 生图功能 (AI 生图与相册)</summary>
+                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">4. 生图功能 (AI 生图与相册管理)</summary>
                 <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); line-height: 1.6; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
-                    <b>【功能概述】</b>：支持基于 DALL-E 3 或第三方生图模型一键产出高质感角色立绘与场景画作。<br>
+                    <b>【功能概述】</b>：支持基于 DALL-E 3 或第三方生图 API 快速产出高质感角色立绘与场景画作。<br>
                     <b>【操作步骤】</b>：<br>
-                    ① 输入人物外貌动作提示词，选用内置真实感或日系平涂环境修饰词；<br>
+                    ① 输入人物外貌动作提示词，选用内置真实感或日系平涂修饰词；<br>
                     ② 选择画面比例（16:9 / 3:4 / 2:3 或自定义），点击「启动 CoT 并生图」；<br>
                     ③ 点击底部按钮可进入「生图相册」，支持全屏大图预览、独立删除、分组管理及多选批量下载。
                 </div>
@@ -2078,7 +2099,7 @@ age：年龄
 
             <!-- 6. 开场白生成器 -->
             <details class="engine-card" style="outline: none; margin-bottom: 10px;">
-                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">6. 开场白生成器 (群像交互 & 文风加持)</summary>
+                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">6. 开场白生成器 (多人联动 & 文风描写加持)</summary>
                 <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); line-height: 1.6; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
                     <b>【功能概述】</b>：融合主角色、IF线、配套世界书、普通世界书与文风规范，生成极具代入感的入戏剧情。<br>
                     <b>【操作步骤】</b>：<br>
@@ -2092,7 +2113,7 @@ age：年龄
             <details class="engine-card" style="outline: none; margin-bottom: 10px;">
                 <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">7 & 8. char预览 & user预览 (数据管理中心)</summary>
                 <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); line-height: 1.6; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
-                    <b>【功能概述】</b>：卡片展示中心，具备自建分组、标签管理、单独/全量导出以及 iOS 专属单份防拦截下载机制。<br>
+                    <b>【功能概述】</b>：数据管理中心，具备自建分组、标签管理、单独/全量导出以及单份防拦截下载机制。<br>
                     <b>【操作步骤】</b>：<br>
                     ① 点击展开可查看该角色名下所有绑定的世界书、IF线与世界观数据；<br>
                     ② 点击右上角「多选」或长按卡片进入批量模式，可批量移动分组、批量下载或删除；<br>
@@ -2136,13 +2157,13 @@ age：年龄
 
             <!-- 17. 人设整理 -->
             <details class="engine-card" style="outline: none; margin-bottom: 10px;">
-                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">17. 人设整理 (双模式格式化清洗与转存)</summary>
+                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">17. 人设整理 (双模式格式化清洗与一键转存)</summary>
                 <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); line-height: 1.6; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
-                    <b>【功能概述】</b>：位于第二页，将杂乱未排版的草稿一键梳理重构为规整专业人设卡。<br>
+                    <b>【功能概述】</b>：位于主屏幕第二页，将杂乱未排版的草稿一键梳理重构为规整专业人设卡。<br>
                     <b>【操作步骤】</b>：<br>
                     ① 输入角色姓名，选择「纯整理模式」（忠于原作不增删）或「详细整理模式」（深度扩写丰富细节）；<br>
                     ② 粘贴原始文本，支持勾选破限生成，生成后可继续生成、修改人设或保存；<br>
-                    ③ 点击右上角纸箱进入「整理人设卡库」，可多选批量下载、删除，并支持<b>「一键转存至Char主库」</b>（转存后立即可在 User生成、世界书、开场白、世界观中作为主角色选用）。
+                    ③ 点击右上角纸箱进入「整理人设卡库」，可多选批量下载、删除，并支持<b>「一键转存至 Char 主库」</b>（转存后立即可在 User生成、世界书、开场白、世界观中作为主角色选用）。
                 </div>
             </details>
 
@@ -2150,7 +2171,7 @@ age：年龄
             <details class="engine-card" style="outline: none; margin-bottom: 10px;">
                 <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">18. 文风生成 (专属笔触定制与开场白联动)</summary>
                 <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); line-height: 1.6; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
-                    <b>【功能概述】</b>：位于第二页，定制小说级行文笔触、电影感叙事或细腻心理流规范体系。<br>
+                    <b>【功能概述】</b>：位于主屏幕第二页，定制小说级行文笔触、电影感叙事或细腻心理流规范体系。<br>
                     <b>【操作步骤】</b>：<br>
                     ① 填写文风主题与特征要求，点击生成完整的行文法则与示范段落；<br>
                     ② 生成后支持复制、导出 Docx/Txt，点击「直接保存进文风库」；<br>
@@ -2160,13 +2181,14 @@ age：年龄
 
             <!-- 19. 模板自定义 -->
             <details class="engine-card" style="outline: none; margin-bottom: 10px;">
-                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">19. 模板自定义 (手写/AI设计模板与全自动挂载)</summary>
+                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">19. 模板自定义 (手写/AI设计模板与双向挂载)</summary>
                 <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); line-height: 1.6; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
-                    <b>【功能概述】</b>：位于第二页，自由设计专属于你的人设骨架结构，支持带作者署名。<br>
+                    <b>【功能概述】</b>：位于主屏幕第二页，自由设计专属于你的角色骨架结构，支持带作者署名。<br>
                     <b>【操作步骤】</b>：<br>
                     ① 填写模板名称与作者署名（by谁）；<br>
                     ② 支持「手动编写」或切换至「AI辅助生成」输入题材需求让模型自动构思字段结构；<br>
-                    ③ 点击保存后，<b>该自建模板将全自动同步接入「char生成器」和「选项人设生成」的模板下拉菜单中</b>，随时可直接套用生成！
+                    ③ 点击保存时会弹出用途选择：<b>「保存为 Char 角色模板」</b>、<b>「保存为 User 模板」</b>或<b>「两者双向通用」</b>；<br>
+                    ④ 保存后全自动同步插入对应生成器的模板选择菜单中，随时直接套用！
                 </div>
             </details>
         </div>
@@ -2178,39 +2200,18 @@ age：年龄
         <div class="modal-card" style="max-width: 440px; max-height: 85vh;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <span style="font-size: 11px; font-weight: bold; color: #222; background: rgba(0,0,0,0.06); padding: 2px 8px; border-radius: 6px;">工坊重要更新日志</span>
-                <span style="font-size: 10px; color: var(--text-light);">版本 v1.9.5</span>
+                <span style="font-size: 10px; color: var(--text-light);">版本 v2.1.3</span>
             </div>
-            <h3 class="modal-title" style="margin-bottom: 12px; font-size: 16px;">✨ 耳机の生成工坊·全新升级公告</h3>
+            <h3 class="modal-title" style="margin-bottom: 12px; font-size: 16px;">耳机の生成工坊 v2.1.3 更新与修复公告</h3>
             <div class="modal-content-area" style="font-size: 12px; line-height: 1.7; color: var(--text-muted); white-space: pre-wrap; padding-right: 4px;">
-<b>🎉 欢迎体验全新升级版本！本次更新要点如下：</b>
+<b>🛠️ 【紧急 Bug 修复】：</b>
+1. <b>修复全屏按钮瘫痪问题</b>：彻底清除了底层代码中重复粘贴导致的语法解析错误，完全恢复了顶栏时间/电量显示及全页面所有按钮的点击响应；
+2. <b>修复手机端触控冲突</b>：优化了移动端长按判定与滑动逻辑，解决了误触进入多选或图片拖拽阻断手势的问题。
 
-<b>1. 👥 多人 Char 创作引擎实装</b>
-· 普通生成与选项生成双面板均已上线多人模式，支持一次性构思多位群像角色及角色相互关系网，生成后支持子角色分 Tab 实时切换预览。
-
-<b>2. 🎭 开场白多人联动与专属文风加持</b>
-· 开场白选择多人卡时，可自由单选某位子角色生成单人相遇剧情，亦可全选开启多人群像大戏；
-· 新增「开启文风」面板，可一键挂载文风库或导入外部 Docx/Txt 文风规范。
-
-<b>3. 📱 主屏幕横向翻页与第二页矩阵</b>
-· 主页完美支持左右滑动翻页与 iOS 圆点指示器，壁纸全页通透同步；
-· 第二页全新入驻三大实用 App：【人设整理】、【文风生成】、【模板自定义】。
-
-<b>4. 🧹 人设整理 App（双模式 + 仓库转存）</b>
-· 必须输入角色名后开启整理，支持「纯整理」（标准排版清洗）与「详细整理」（深度扩写丰富人设）双模式；
-· 配备整理仓库，支持多选、批量导出，并可<b>一键转存至 Char 主库</b>无缝联动所有 App。
-
-<b>5. ✍️ 文风生成 App</b>
-· 打造专属行文笔触与心理描写规范，配备独立文风库，可直接下载、复制并注入开场白。
-
-<b>6. 🛠️ 模板自定义 App（AI 辅助 + 自动挂载）</b>
-· 支持手动编写或由 AI 智能设计排版代码，支持署名（by谁）；
-· 保存后自动同步插入 Char 生成器的模板选择器中直接套用。
-
-<b>7. 📖 全 App 教程指南手册上线</b>
-· 第二页新增「工坊教程」App，收录 20 个应用的保姆级图文使用指引。
-
-<b>8. 🔒 防二传倒卖认证保护锁</b>
-· 新增 4 道口令认证门禁，保障原创安全，一次认证永久生效。
+<b>✨ 【本次版本更新与优化】：</b>
+1. <b>移除 User 生成器旧版提示</b>：删除了原有的“还没内置模板”提示栏，现已全面打通【模板自定义】App（自建模板支持保存为 Char / User / 双向通用并自动挂载到对应生成器中）；
+2. <b>教程区全面升级 (v2.1.3)</b>：第二页「工坊教程」App 内容已全部同步更新，收录了全 App 最新实装功能的使用技巧与联动指引；
+3. <b>优化群像与文风联动</b>：提升了多人 Char 群像生成、开场白多人交互及文风描写加持的生成稳定性。
             </div>
             <div class="modal-footer" style="margin-top: 16px;">
                 <button class="btn btn-primary" style="width: 100%; padding: 12px;" onclick="closeUpdateNoticeModal()">我知道了，开始创作</button>
@@ -2975,16 +2976,16 @@ Proactive & Non-proactive：
         let tempIfAvatarStr = ''; let tempIfCharText = ''; let tempIfCharId = null; let tempIfTag = '';
         let currentWvTab = 'normal'; let isWvNormalBound = true; let tempWvContentText = '';
 
-        // ==================== 更新日志弹窗控制器 ====================
+        // ==================== 更新日志弹窗控制器 (v2.1.3 专属新弹窗) ====================
         function checkAndShowUpdateNotice() {
-            if (!state.update_v190_shown) {
+            if (!state.update_v213_shown) {
                 document.getElementById('update-notice-modal').style.display = 'flex';
             }
         }
 
         async function closeUpdateNoticeModal() {
             document.getElementById('update-notice-modal').style.display = 'none';
-            state.update_v190_shown = true;
+            state.update_v213_shown = true;
             await saveData();
         }
 
@@ -3448,6 +3449,30 @@ Proactive & Non-proactive：
                 const txt = document.getElementById('btn-toggle-multi-option-text');
                 if (txt) txt.innerText = isMultiCharOption ? "切回单人" : "多人模式";
                 document.getElementById('option-multi-summary-box').style.display = isMultiCharOption ? 'block' : 'none';
+
+                // 多人模式下自适应变形：大输入框变为“输入其余补充”，头像变为左上角小方块
+                const label = document.getElementById('char-option-direction-label');
+                const textarea = document.getElementById('char-option-direction');
+                const uploadBox = document.getElementById('avatar-option-upload-box');
+                const uploadText = document.getElementById('avatar-option-upload-text');
+
+                if (isMultiCharOption) {
+                    if (label) label.innerText = "输入其余补充（全员大纲/设定细节/背景法则）：";
+                    if (textarea) textarea.placeholder = "在此输入多人角色的其余补充大纲、共同经历、特殊背景细节等（API 将直接深度读取并融入全员生成中）...";
+                    if (uploadBox) {
+                        uploadBox.style.flex = "0 0 60px";
+                        uploadBox.style.height = "60px";
+                    }
+                    if (uploadText) uploadText.innerHTML = "头像";
+                } else {
+                    if (label) label.innerText = "人设补充搭配（选填）：";
+                    if (textarea) textarea.placeholder = "在此手动输入额外特色设定、穿搭特点、或者恋人引导倾向等补充搭配细节（选填，大纲已模块化，不写也可一键生成哦）...";
+                    if (uploadBox) {
+                        uploadBox.style.flex = "0 0 100px";
+                        uploadBox.style.height = "140px";
+                    }
+                    if (uploadText) uploadText.innerHTML = "上传头像<br>(PNG/JPG)";
+                }
             }
         }
 
@@ -3696,13 +3721,45 @@ Proactive & Non-proactive：
             }
         }
 
+        // ==================== 智能模板解析调度核心 ====================
+        function resolveCharTemplate(templateKey, isNsfw) {
+            if (templateKey === 'earphone') {
+                return {
+                    template: getCharTemplate(isNsfw),
+                    startWatermark: WATERMARK,
+                    endWatermark: ''
+                };
+            } else if (templateKey === 'wenwulei') {
+                return {
+                    template: TEMPLATE_WENWULEI,
+                    startWatermark: WATERMARK_WENWULEI_START,
+                    endWatermark: ''
+                };
+            } else if (templateKey && templateKey.startsWith('custom_')) {
+                // 读取自建模板
+                const customTmpl = (state.userCustomTemplates || []).find(t => t.id === templateKey);
+                if (customTmpl) {
+                    return {
+                        template: customTmpl.body,
+                        startWatermark: `#此角色卡由耳机の角色卡生成工坊制作而来\n#此人设模板来自@${customTmpl.author || '自定'}\n\n`,
+                        endWatermark: ''
+                    };
+                }
+            }
+            return {
+                template: getCharTemplate(isNsfw),
+                startWatermark: WATERMARK,
+                endWatermark: ''
+            };
+        }
+
         // ==================== 普通 Char 生成入口 ====================
         function generateCharacter() {
             const streamMode = document.querySelector('input[name="api_stream_mode"]:checked').value === 'stream';
-            let currentTemplateType = state.char_template_type || 'earphone';
-            let activeTemplate = currentTemplateType === 'earphone' ? getCharTemplate(document.getElementById('nsfw-cb').checked) : TEMPLATE_WENWULEI;
-            let startWatermark = currentTemplateType === 'earphone' ? WATERMARK : WATERMARK_WENWULEI_START;
-            let endWatermark = currentTemplateType === 'earphone' ? '' : WATERMARK_WENWULEI_END;
+            const templateInfo = resolveCharTemplate(state.char_template_type || 'earphone', document.getElementById('nsfw-cb')?.checked);
+            let activeTemplate = templateInfo.template;
+            let startWatermark = templateInfo.startWatermark;
+            let endWatermark = templateInfo.endWatermark;
 
             if (isMultiCharStandard) {
                 const groupName = document.getElementById('multi-char-group-name').value.trim() || "多人组合群像卡";
@@ -3787,6 +3844,143 @@ ${activeTemplate}
                 sb.innerText = "生成失败: " + err; 
             }, state.tApiProxy);
         }
+
+        // ==================== 选项人设生成入口 ====================
+        function generateOptionCharacter() {
+            const streamMode = document.querySelector('input[name="api_option_stream_mode"]:checked').value === 'stream';
+            const templateInfo = resolveCharTemplate(state.char_template_type || 'earphone', document.getElementById('nsfw-option-cb')?.checked);
+            let activeTemplate = templateInfo.template;
+            let startWatermark = templateInfo.startWatermark;
+            let endWatermark = templateInfo.endWatermark;
+
+            // 选项多人生成分支
+            if (isMultiCharOption) {
+                const groupName = document.getElementById('multi-char-option-group-name').value.trim() || "多人选项群像组合";
+                const rels = document.getElementById('multi-option-relations-input').value.trim();
+                const extraNotes = document.getElementById('char-option-direction').value.trim();
+                if (multiOptionMembers.length < 2) return alert("请至少暂存 2 位多人选项角色再点击生成！");
+
+                let sysPrompt = `你是一个专业的多人角色群像卡创作大师。请基于提供的各角色标签设定，为用户一次性生成包含【${multiOptionMembers.map(m=>m.name).join('、')}】共 ${multiOptionMembers.length} 位角色的组合人设卡。
+【必须严格遵守的排版规范】：
+1. 必须一次性分别输出每一位角色的完整人设。
+2. 每一个角色必须独占一个段落，且必须严格以 "### 角色：【角色名字】" 作为开头！
+3. 每个角色的人设内部必须有独立的完整模板骨架（包含从 *<start…… 到 …end>* 的完整闭环）：
+${activeTemplate}
+4. 严禁把多个角色的属性混写在同一个模板里！必须一个角色写完闭环后再开始写下一个角色！
+5. 在全部角色的人设全部写完后，在最后单独以 "### 多人关系网：" 章节输出角色间的相互羁绊与关系。`;
+
+                let userContent = "";
+                if (state.jailbreakEnabled && state.jailbreakPrompt) userContent += `[破限指令]：\n${state.jailbreakPrompt}\n\n`;
+                userContent += `【多人卡组合名】：${groupName}\n【各角色标签设定详情】：\n`;
+                
+                multiOptionMembers.forEach((m, idx) => {
+                    let tagsDesc = [];
+                    if (m.tags.gender) tagsDesc.push(`性别：${m.tags.gender}`);
+                    if (m.tags.orientation) tagsDesc.push(`性取向：${m.tags.orientation}`);
+                    if (m.tags.age) tagsDesc.push(`年龄：${m.tags.age}`);
+                    if (m.tags.archetype) tagsDesc.push(`塑形：${m.tags.archetype}`);
+                    if (m.tags.personality && m.tags.personality.length) tagsDesc.push(`性格：${m.tags.personality.join('、')}`);
+                    if (m.tags.occupation && m.tags.occupation.length) tagsDesc.push(`职业：${m.tags.occupation.join('、')}`);
+                    userContent += `角色${idx+1}【${m.name}】：\n- 标签：${tagsDesc.join(' | ') || '无特定标签'}\n- 该角色补充：${m.direction || '无'}\n\n`;
+                });
+
+                if (extraNotes) userContent += `【全员其余补充设定（必须严格参考融入）】：\n${extraNotes}\n\n`;
+                if (rels) userContent += `【角色间关系网要求】：\n${rels}\n`;
+
+                const sb = document.getElementById('char-option-stream-box');
+                sb.style.display = 'block'; sb.style.color = 'var(--text-main)'; sb.innerText = `正在分析选项并生成多人人设...`;
+                
+                document.getElementById('post-gen-option-retry-row').style.display = 'none';
+                document.getElementById('post-gen-option-action-row').style.display = 'none';
+                document.getElementById('post-option-edit-panel').style.display = 'none';
+
+                callTextAPI(state.tApiUrl, state.tApiKey, state.tApiModel, sysPrompt, [{role:"user", content: userContent}], streamMode, (txt) => {
+                    sb.innerText = startWatermark + txt;
+                }, (fin) => {
+                    const completeText = startWatermark + fin + endWatermark;
+                    sb.innerText = completeText;
+                    parsedMultiSubContents = parseMultiGeneratedText(completeText, multiOptionMembers.map(m => m.name));
+                    renderMultiSubTabs('char-multi-subtabs-option', 'char-option-stream-box', multiOptionMembers.map(m => m.name));
+                    document.getElementById('post-gen-option-retry-row').style.display = 'flex';
+                    document.getElementById('post-gen-option-action-row').style.display = 'flex';
+                    alert("多人选项角色创造成功！可在上方切换查看各角色内容。");
+                }, (err) => {
+                    sb.style.color = 'var(--accent-danger)';
+                    sb.innerText = "生成失败: " + err;
+                }, state.tApiProxy);
+                return;
+            }
+
+            // 单人选项生成原逻辑
+            const charName = document.getElementById('char-option-name-input').value.trim() || "未命名";
+            const supplementDir = document.getElementById('char-option-direction').value.trim();
+            document.getElementById('char-multi-subtabs-option').style.display = 'none';
+
+            let sysPrompt = `你是一个专业的人设生成器。请完全以以下模板格式和排版输出：\n\n${activeTemplate}`;
+            
+            const forbiddenDir = document.getElementById('char-option-forbidden-direction')?.value.trim();
+            if (forbiddenDir) {
+                sysPrompt += `\n\n【极其重要的负面禁止约束 (CRITICAL NEGATIVE CONSTRAINTS)】：\n在生成该角色的人设时，必须绝对严格禁止、抹除并避免出现以下内容或写作倾向：\n- ${forbiddenDir}\n请确保最终生成的所有模板属性中，没有任何字眼、设定或表现暗示违反上述禁止约束。`;
+            }
+
+            let tagsDescription = `[角色标签基础设定]：\n`;
+            tagsDescription += `角色姓名：${charName}\n`;
+            if (selectedTags.gender) tagsDescription += `性别分类：${selectedTags.gender}\n`;
+            if (selectedTags.orientation) tagsDescription += `性取向：${selectedTags.orientation}\n`;
+            if (selectedTags.age) tagsDescription += `年龄分类：${selectedTags.age}\n`;
+            if (selectedTags.archetype) tagsDescription += `塑形倾向：${selectedTags.archetype}\n`;
+            if (selectedTags.personality.length > 0) tagsDescription += `性格标签：${selectedTags.personality.join('、')}\n`;
+            if (selectedTags.occupation.length > 0) tagsDescription += `身份/职业：${selectedTags.occupation.join('、')}\n`;
+
+            if (state.customCategories && state.customCategories.length > 0) {
+                state.customCategories.forEach(cat => {
+                    const val = selectedTags.custom[cat.id];
+                    if (val) {
+                        if (cat.multiSelect && Array.isArray(val) && val.length > 0) {
+                            tagsDescription += `${cat.name}标签：${val.join('、')}\n`;
+                        } else if (!cat.multiSelect && typeof val === 'string') {
+                            tagsDescription += `${cat.name}：${val}\n`;
+                        }
+                    }
+                });
+            }
+
+            let userContent = "";
+            if (state.jailbreakEnabled && state.jailbreakPrompt) {
+                userContent += `[破限指令]：\n${state.jailbreakPrompt}\n\n`;
+            }
+            
+            if (document.getElementById('read-option-avatar-cb').checked) {
+                const appText = document.getElementById('avatar-option-appearance-text').value.trim();
+                if (appText && !appText.includes('识别中')) userContent += `[外貌细节参考]：\n${appText}\n\n`;
+            }
+            
+            userContent += `${tagsDescription}`;
+            if (supplementDir) {
+                userContent += `[额外人设补充搭配大纲方向]：\n${supplementDir}`;
+            } else {
+                userContent += `[处理规则]：请基于上述给定的核心人设标签，自由且合理地脑补生成一套极致精美详细、带有深度背景、符合该人物属性特质的完整人设方案。`;
+            }
+
+            const sb = document.getElementById('char-option-stream-box');
+            sb.style.display = 'block'; sb.style.color = 'var(--text-main)'; sb.innerText = `正在分析选项并生成人设...`;
+            
+            document.getElementById('post-gen-option-retry-row').style.display = 'none';
+            document.getElementById('post-gen-option-action-row').style.display = 'none';
+            document.getElementById('post-option-edit-panel').style.display = 'none';
+            
+            callTextAPI(state.tApiUrl, state.tApiKey, state.tApiModel, sysPrompt, [{role:"user", content: userContent}], streamMode, (txt) => {
+                sb.innerText = startWatermark + txt;
+            }, (fin) => {
+                sb.innerText = startWatermark + fin + endWatermark;
+                document.getElementById('post-gen-option-retry-row').style.display = 'flex';
+                document.getElementById('post-gen-option-action-row').style.display = 'flex';
+            }, (err) => {
+                sb.style.color = 'var(--accent-danger)';
+                sb.innerText = "生成失败: " + err;
+            }, state.tApiProxy);
+        }
+
         function continueGenerateCharacter() { 
             let base = document.getElementById('char-stream-box').innerText; 
             
@@ -3926,6 +4120,20 @@ ${activeTemplate}
             const dir = document.getElementById('user-direction').value.trim(); 
             if (!dir) return alert("请填写方向！");
             const stream = document.querySelector('input[name="user_gen_stream_mode"]:checked').value === 'stream';
+            
+            // 检查是否选用了自定义 User 模板
+            const tmplKey = document.getElementById('user-template-select')?.value || 'none';
+            let skeletonPrompt = `*<start……\nUser Profile:\n姓名：${name}\n性别：...\n年龄：...\n外貌细节：...\n核心性格特征：...\n背景故事大纲：...\n行为惯性习惯：...\n相处互动指导细节：...\n…end>*`;
+            let tmplWatermark = USER_WATERMARK;
+
+            if (tmplKey !== 'none' && tmplKey.startsWith('custom_')) {
+                const customTmpl = (state.userCustomTemplates || []).find(t => t.id === tmplKey);
+                if (customTmpl) {
+                    skeletonPrompt = customTmpl.body;
+                    tmplWatermark = `#该user人设由【耳机の生成器】所生成而来\n#此人设模板来自@${customTmpl.author || '自定'}\n\n`;
+                }
+            }
+
             let sysPrompt = ""; 
             if (isUserBound && state.cards.length > 0) { 
                 const charCard = state.cards.find(c => c.id == document.getElementById('user-bound-char-select').value); 
@@ -3942,11 +4150,32 @@ ${activeTemplate}
                 tempUserBoundCharName = ''; 
                 sysPrompt = "你是一个优秀的User人设生成器。"; 
             }
-            sysPrompt += `\n\n【严格参考排版骨架】：\n*<start……\nUser Profile:\n姓名：${name}\n性别：...\n年龄：...\n外貌细节：...\n核心性格特征：...\n背景故事大纲：...\n行为惯性习惯：...\n相处互动指导细节：...\n…end>*`;
-            let userMsg = ""; if (state.jailbreakEnabled && state.jailbreakPrompt) userMsg += `[破限指令]：\n${state.jailbreakPrompt}\n\n`; userMsg += `[大纲]：\nUser姓名：${name}\n性格/关系：${dir}`;
-            const sb = document.getElementById('user-stream-box'); sb.style.display = 'block'; sb.style.color = 'var(--text-main)'; sb.innerText = `正在生成User...`; document.getElementById('post-user-retry-row').style.display = 'none'; document.getElementById('post-user-action-row').style.display = 'none'; document.getElementById('post-user-edit-panel').style.display = 'none';
-            if (!state.tApiUrl || !state.tApiKey) return sb.innerText = "❌ 未配置";
-            callTextAPI(state.tApiUrl, state.tApiKey, state.tApiModel, sysPrompt, [{role: "user", content: userMsg}], stream, (txt) => { sb.innerText = USER_WATERMARK + txt; }, (fin) => { const complete = USER_WATERMARK + fin + "\n\n……end*"; sb.innerText = complete; tempUserText = complete; document.getElementById('post-user-retry-row').style.display = 'flex'; document.getElementById('post-user-action-row').style.display = 'flex'; }, (err) => { sb.style.color = 'var(--accent-danger)'; sb.innerText = "失败: " + err; }, state.tApiProxy);
+            sysPrompt += `\n\n【严格按照以下模板结构和排版格式输出】：\n${skeletonPrompt}`;
+            
+            let userMsg = ""; 
+            if (state.jailbreakEnabled && state.jailbreakPrompt) userMsg += `[破限指令]：\n${state.jailbreakPrompt}\n\n`; 
+            userMsg += `[大纲]：\nUser姓名：${name}\n性格/关系设定：${dir}`;
+            
+            const sb = document.getElementById('user-stream-box'); 
+            sb.style.display = 'block'; sb.style.color = 'var(--text-main)'; sb.innerText = `正在生成User...`; 
+            document.getElementById('post-user-retry-row').style.display = 'none'; 
+            document.getElementById('post-user-action-row').style.display = 'none'; 
+            document.getElementById('post-user-edit-panel').style.display = 'none';
+            
+            if (!state.tApiUrl || !state.tApiKey) return sb.innerText = "❌ 未配置文本 API";
+            
+            callTextAPI(state.tApiUrl, state.tApiKey, state.tApiModel, sysPrompt, [{role: "user", content: userMsg}], stream, (txt) => { 
+                sb.innerText = tmplWatermark + txt; 
+            }, (fin) => { 
+                const complete = tmplWatermark + fin + (fin.includes('end>') ? '' : "\n\n……end*"); 
+                sb.innerText = complete; 
+                tempUserText = complete; 
+                document.getElementById('post-user-retry-row').style.display = 'flex'; 
+                document.getElementById('post-user-action-row').style.display = 'flex'; 
+            }, (err) => { 
+                sb.style.color = 'var(--accent-danger)'; 
+                sb.innerText = "失败: " + err; 
+            }, state.tApiProxy);
         }
         function continueGenerateUser() { 
             let base = document.getElementById('user-stream-box').innerText; 
@@ -5867,23 +6096,53 @@ ${getCharTemplate(true)}`;
             `).join('');
         }
 
-        async function saveUserCustomTemplate() {
+        let tempPendingSaveTemplate = null;
+
+        function saveUserCustomTemplate() {
             const name = document.getElementById('cust-tmpl-name').value.trim();
             const author = document.getElementById('cust-tmpl-author').value.trim() || '自定';
             const body = document.getElementById('cust-tmpl-body').value.trim();
             if (!name || !body) return alert("模板名称和模板结构内容均不能为空！");
+            
+            tempPendingSaveTemplate = { name, author, body };
+            // 打开高级感归类保存弹窗
+            document.getElementById('template-save-type-modal').style.display = 'flex';
+        }
+
+        function closeTemplateSaveTypeModal() {
+            document.getElementById('template-save-type-modal').style.display = 'none';
+        }
+
+        async function confirmSaveUserCustomTemplate(targetType) {
+            if (!tempPendingSaveTemplate) return;
+            const { name, author, body } = tempPendingSaveTemplate;
             if (!state.userCustomTemplates) state.userCustomTemplates = [];
 
             const existingIdx = state.userCustomTemplates.findIndex(t => t.name === name);
             if (existingIdx > -1) {
-                state.userCustomTemplates[existingIdx] = { id: state.userCustomTemplates[existingIdx].id, name, author, body };
+                state.userCustomTemplates[existingIdx] = { 
+                    id: state.userCustomTemplates[existingIdx].id, 
+                    name, 
+                    author, 
+                    body,
+                    targetType: targetType // 'char' | 'user' | 'both'
+                };
             } else {
-                state.userCustomTemplates.push({ id: 'custom_' + Date.now(), name, author, body });
+                state.userCustomTemplates.push({ 
+                    id: 'custom_' + Date.now(), 
+                    name, 
+                    author, 
+                    body,
+                    targetType: targetType
+                });
             }
+
             await saveData();
             refreshCharTemplateDropdowns();
+            refreshUserTemplateDropdowns();
             renderCustomTemplatesList();
-            alert("自定义人设模板保存成功！已自动同步到 Char 生成器模板选择框中。");
+            closeTemplateSaveTypeModal();
+            alert("🎉 自定义人设模板保存成功！已自动挂载到对应的生成器模板选择菜单中。");
         }
 
         function loadUserCustomTemplate(idx) {
@@ -5900,6 +6159,7 @@ ${getCharTemplate(true)}`;
                 state.userCustomTemplates.splice(idx, 1);
                 await saveData();
                 refreshCharTemplateDropdowns();
+                refreshUserTemplateDropdowns();
                 renderCustomTemplatesList();
             }
         }
@@ -5911,11 +6171,13 @@ ${getCharTemplate(true)}`;
             document.getElementById('tmpl-ai-prompt').value = '';
         }
 
-        // 自动将自建模板挂载到两个 Char 生成器的模板选择器中
+        // 自动将自建模板挂载到 Char 生成器与 User 生成器中
         function refreshCharTemplateDropdowns() {
             const s1 = document.getElementById('char-template-select');
             const s2 = document.getElementById('char-option-template-select');
-            let customOptions = (state.userCustomTemplates || []).map(t => `<option value="${t.id}">自建模板: ${t.name} (by ${t.author || '自定'})</option>`).join('');
+            // 只筛选适用于 char 或 both 的模板
+            const charTemplates = (state.userCustomTemplates || []).filter(t => !t.targetType || t.targetType === 'char' || t.targetType === 'both');
+            let customOptions = charTemplates.map(t => `<option value="${t.id}">自建模板: ${t.name} (by ${t.author || '自定'})</option>`).join('');
             
             const baseHtml = `
                 <option value="earphone">生成器原内置模板－by耳机</option>
@@ -5928,6 +6190,15 @@ ${getCharTemplate(true)}`;
                 if (s1) s1.value = state.char_template_type;
                 if (s2) s2.value = state.char_template_type;
             }
+        }
+
+        function refreshUserTemplateDropdowns() {
+            const uSel = document.getElementById('user-template-select');
+            if (!uSel) return;
+            // 筛选适用于 user 或 both 的模板
+            const userTemplates = (state.userCustomTemplates || []).filter(t => t.targetType === 'user' || t.targetType === 'both');
+            let uOptions = userTemplates.map(t => `<option value="${t.id}">自建模板: ${t.name} (by ${t.author || '自定'})</option>`).join('');
+            uSel.innerHTML = `<option value="none">不使用固定模板（大模型自由发挥）</option>${uOptions}`;
         }
 
         // ==================== 主屏幕分页与滑动联动控制器 ====================
@@ -6210,6 +6481,15 @@ ${getCharTemplate(true)}`;
                 if (gwb) {
                     userMsg += `【绑定普通世界书】：\n${gwb.content}\n\n`;
                     logArr.push(`普通世界书: ${gwb.title}`);
+                }
+            }
+
+            // (5.5) 核心修复：读取专属文风描写加持
+            if (document.getElementById('gtg-enable-style')?.checked) {
+                const styleText = document.getElementById('gtg-style-text')?.value.trim();
+                if (styleText) {
+                    userMsg += `【专属文风行文规范与叙事笔触（必须深度遵循与贯穿运用）】：\n${styleText}\n\n`;
+                    logArr.push("专属文风加持");
                 }
             }
 
