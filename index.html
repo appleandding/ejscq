@@ -644,6 +644,12 @@
                         </div>
                         <div class="app-name">模板自定义</div>
                     </div>
+                    <div class="app-item" onclick="switchView('view-prompt-gen')">
+                        <div class="app-icon-wrapper">
+                            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><line x1="9" y1="10" x2="15" y2="10"></line><line x1="12" y1="7" x2="12" y2="13"></line></svg>
+                        </div>
+                        <div class="app-name">提示词</div>
+                    </div>
                     <div class="app-item" onclick="switchView('view-tutorial-guide')">
                         <div class="app-icon-wrapper">
                             <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
@@ -1980,6 +1986,139 @@ age：年龄
         </div>
     </div>
 
+    <!-- 20. 提示词预设与反八股规则中枢 App -->
+    <div id="view-prompt-gen" class="view-container">
+        <div class="app-header">
+            <button class="back-btn" onclick="handlePromptBackBtn()"><svg><path d="M15 19l-7-7 7-7"/></svg></button>
+            <span class="app-title" id="prompt-app-header-title">提示词</span>
+            <!-- 二级页面右上角快速添加按钮 -->
+            <button class="icon-btn" id="btn-prompt-header-add" onclick="toggleCustomPromptEditor(true)" style="margin-left:auto; display:none;">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- 一级视图：4 个分区垂直排列的列表卡片（无emoji，绝对并列防折行） -->
+        <div id="prompt-main-menu-panel" style="margin-top: 16px;">
+            <div class="engine-card" style="margin-bottom: 14px; border-left: 4px solid #222; padding: 14px;">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">提示词规则与去八股中枢</div>
+                <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
+                    点击下方各个分区进入设置页，可自建与管理提示词。开启开关后，各生成器在调用 API 时将自动注入规避八股套话。
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- 1. 人设提示词卡片 -->
+                <div class="list-item" onclick="openPromptCategoryDetail('char')" style="cursor: pointer; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
+                    <div style="flex: 1; padding-right: 12px; min-width: 0;">
+                        <div style="font-size: 15px; font-weight: bold; color: var(--text-main);">
+                            人设提示词
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+                            规范角色人设性格、反差感与说话口吻，去扁平化
+                        </div>
+                    </div>
+                    <div style="flex-shrink: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                        <span id="badge-prompt-count-char" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">0 条启用</span>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-light);"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
+                </div>
+
+                <!-- 2. 开场白提示词卡片 -->
+                <div class="list-item" onclick="openPromptCategoryDetail('greeting')" style="cursor: pointer; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
+                    <div style="flex: 1; padding-right: 12px; min-width: 0;">
+                        <div style="font-size: 15px; font-weight: bold; color: var(--text-main);">
+                            开场白提示词
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+                            约束开场入戏剧情，拒绝空洞说教与旁白式长篇解说
+                        </div>
+                    </div>
+                    <div style="flex-shrink: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                        <span id="badge-prompt-count-greeting" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">0 条启用</span>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-light);"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
+                </div>
+
+                <!-- 3. 世界书提示词卡片 -->
+                <div class="list-item" onclick="openPromptCategoryDetail('worldbook')" style="cursor: pointer; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
+                    <div style="flex: 1; padding-right: 12px; min-width: 0;">
+                        <div style="font-size: 15px; font-weight: bold; color: var(--text-main);">
+                            世界书提示词
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+                            强化城市、地点与背景设定的因果闭环与逻辑严密性
+                        </div>
+                    </div>
+                    <div style="flex-shrink: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                        <span id="badge-prompt-count-worldbook" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">0 条启用</span>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-light);"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
+                </div>
+
+                <!-- 4. 通用提示词卡片 -->
+                <div class="list-item" onclick="openPromptCategoryDetail('general')" style="cursor: pointer; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
+                    <div style="flex: 1; padding-right: 12px; min-width: 0;">
+                        <div style="font-size: 15px; font-weight: bold; color: var(--text-main);">
+                            通用提示词 (全局反八股)
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+                            全模块通用，严禁“嘴角勾起/仿佛/眼中闪过暗芒”等水词
+                        </div>
+                    </div>
+                    <div style="flex-shrink: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                        <span id="badge-prompt-count-general" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">0 条启用</span>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-light);"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 二级子视图：具体分区的提示词规则管理页面 -->
+        <div id="prompt-category-detail-panel" style="display: none; margin-top: 16px;">
+            <!-- 头部说明 -->
+            <div class="engine-card" style="padding: 14px; margin-bottom: 12px;">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;" id="detail-section-title">提示词规则预设</div>
+                <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;" id="detail-section-desc">
+                    开启开关后，生成时将自动读取该条目规则。点击下方【自定义提示词】可自建新预设。
+                </div>
+            </div>
+
+            <!-- 已有预设列表（直接平铺展示全部多条预设） -->
+            <div class="engine-card" style="margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div style="font-size: 13px; font-weight: bold; color: var(--text-main);">预设条目列表：</div>
+                    <button class="btn-small" onclick="resetCurrentCategoryDefaultRules()" style="font-size: 10px; padding: 2px 8px; background: rgba(0,0,0,0.04);">恢复内置默认</button>
+                </div>
+                <div id="detail-rules-list-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+
+            <!-- 【自定义提示词】唤起按钮 -->
+            <button class="btn btn-secondary" id="btn-toggle-custom-prompt" onclick="toggleCustomPromptEditor()" style="width: 100%; margin-bottom: 14px; border: 1.5px dashed var(--border-subtle); padding: 12px; font-size: 13px; font-weight: 600;">
+                + 自定义提示词
+            </button>
+
+            <!-- 点击【自定义提示词】后展开的空白填写与保存面板 -->
+            <div id="custom-prompt-editor-panel" class="engine-card" style="display: none; background: rgba(255, 255, 255, 0.85); border: 1.5px solid var(--accent);">
+                <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px;">新建自定义提示词条目</div>
+                <div class="form-group">
+                    <label>预设名称 / 标签：</label>
+                    <input type="text" id="detail-rule-title-input" class="input-text" placeholder="例如：电影感微表情描写、禁止现代违和语...">
+                </div>
+                <div class="form-group">
+                    <label>详细提示词内容（大模型约束规则）：</label>
+                    <textarea id="detail-rule-content-input" class="input-text" style="height: 110px; font-size: 12px; line-height: 1.5;" placeholder="在此输入自定义指令，例如：严禁使用'嘴角勾起弧度'、'仿佛'等网文烂俗套话；多描写具体动作与眼神神态..."></textarea>
+                </div>
+                <div class="btn-row" style="margin-bottom: 0;">
+                    <button class="btn btn-primary" style="flex: 1;" onclick="saveCurrentDetailPromptRule()">保存此提示词条目</button>
+                    <button class="btn btn-secondary" style="flex: 0 0 80px;" onclick="toggleCustomPromptEditor(false)">收起</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 模态框合集：模板保存类型选择、人设整理仓库 & 文风仓库 -->
     <div class="modal-overlay" id="template-save-type-modal" style="z-index: 4600;" onclick="closeTemplateSaveTypeModal()">
         <div class="modal-card" style="max-width: 350px; text-align: center;" onclick="event.stopPropagation()">
@@ -2017,6 +2156,18 @@ age：年龄
             <div class="modal-content-area" id="global-style-list" style="padding: 10px 0;"></div>
             <div class="modal-footer" style="margin-top: 10px;">
                 <button class="btn btn-primary" style="width:100%;" onclick="closeStyleWarehouse()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示词库专属收藏仓库模态框 -->
+    <div class="modal-overlay" id="global-prompt-warehouse-modal" onclick="closePromptWarehouse()">
+        <div class="modal-card" style="height: 80vh; max-height: 600px;" onclick="event.stopPropagation()">
+            <h3 class="modal-title">提示词库收藏夹</h3>
+            <div class="folder-row" id="global-prompt-folders"></div>
+            <div class="modal-content-area" id="global-prompt-list" style="padding: 10px 0;"></div>
+            <div class="modal-footer" style="margin-top: 10px;">
+                <button class="btn btn-primary" style="width:100%;" onclick="closePromptWarehouse()">关闭</button>
             </div>
         </div>
     </div>
@@ -3449,6 +3600,10 @@ Proactive & Non-proactive：
                 const txt = document.getElementById('btn-toggle-multi-option-text');
                 if (txt) txt.innerText = isMultiCharOption ? "切回单人" : "多人模式";
                 document.getElementById('option-multi-summary-box').style.display = isMultiCharOption ? 'block' : 'none';
+
+                // 多人模式下自动隐藏单人名字输入框，切回单人时恢复
+                const optionNameInput = document.getElementById('char-option-name-input');
+                if (optionNameInput) optionNameInput.style.display = isMultiCharOption ? 'none' : 'block';
 
                 // 多人模式下自适应变形：大输入框变为“输入其余补充”，头像变为左上角小方块
                 const label = document.getElementById('char-option-direction-label');
@@ -6171,6 +6326,255 @@ ${getCharTemplate(true)}`;
             document.getElementById('tmpl-ai-prompt').value = '';
         }
 
+        // ==================== 第二页 App ④：提示词预设与反八股规则中枢 ====================
+        // ==================== 第二页 App ④：提示词预设与反八股规则中枢 ====================
+        let currentPromptRuleCategory = 'char'; // 'char' | 'greeting' | 'worldbook' | 'general'
+        let isPromptInDetailView = false; // 记录是否处于二级子页面
+
+        // 默认内置预设词条库（纯净无emoji）
+        const DEFAULT_PROMPT_RULES = {
+            char: [
+                { id: 101, title: '立体人设与反差感', content: '避免扁平脸谱化设定，角色需具备自洽的行为动机、真实的心理防线，在人前人后展现自然的性格反差细节。', enabled: true },
+                { id: 102, title: '语言风格严密贴合', content: '严格依据角色的年龄、社会背景与性格定制说话口吻与口头禅，严禁所有角色千人一面或使用现代网络烂梗。', enabled: true }
+            ],
+            greeting: [
+                { id: 201, title: '拒绝说教与空泛解说', content: '开场白直接以具象动作、微表情、环境声效或悬念事件切入剧情，严禁以长篇空洞设定解说或上帝视角背景总结开头。', enabled: true },
+                { id: 202, title: '强化入戏代入感', content: '聚焦当下时间与空间交互，描写细致的肢体互动与眼神流转，为玩家预留舒适自然的接话契机。', enabled: true }
+            ],
+            worldbook: [
+                { id: 301, title: '规则因果与严密闭环', content: '世界设定需条理分明，势力与治安律法具备现实逻辑与制约关系，避免悬浮无依的口号式设定。', enabled: true }
+            ],
+            general: [
+                { id: 401, title: '反八股与去水词约束', content: '严禁出现“仿佛”、“宛如”、“嘴角勾起一抹弧度”、“眼中闪过一丝暗芒”、“空气中弥漫着”等网文八股套话；行文自然克制，重在动作与心理细节，拒绝模板化修辞。', enabled: true },
+                { id: 402, title: '拒绝机械化升华总结', content: '严禁在文本末尾输出说教式、陈腔滥调的总结性升华陈述，保持故事沉浸感。', enabled: true }
+            ]
+        };
+
+        function ensurePromptRulesState() {
+            if (!state.promptRules) {
+                state.promptRules = JSON.parse(JSON.stringify(DEFAULT_PROMPT_RULES));
+            }
+            if (!state.promptRules.char) state.promptRules.char = [];
+            if (!state.promptRules.greeting) state.promptRules.greeting = [];
+            if (!state.promptRules.worldbook) state.promptRules.worldbook = [];
+            if (!state.promptRules.general) state.promptRules.general = [];
+        }
+
+        // 统一返回按钮控制器
+        function handlePromptBackBtn() {
+            if (isPromptInDetailView) {
+                showPromptMainMenu();
+            } else {
+                backToDashboard();
+            }
+        }
+
+        // 显示一级主菜单
+        function showPromptMainMenu() {
+            isPromptInDetailView = false;
+            document.getElementById('prompt-app-header-title').innerText = "提示词";
+            document.getElementById('btn-prompt-header-add').style.display = 'none';
+            document.getElementById('prompt-main-menu-panel').style.display = 'block';
+            document.getElementById('prompt-category-detail-panel').style.display = 'none';
+            updatePromptCategoryBadges();
+        }
+
+        // 更新 4 分区卡片角标
+        function updatePromptCategoryBadges() {
+            ensurePromptRulesState();
+            const cats = ['char', 'greeting', 'worldbook', 'general'];
+            cats.forEach(c => {
+                const count = (state.promptRules[c] || []).filter(r => r.enabled).length;
+                const badge = document.getElementById(`badge-prompt-count-${c}`);
+                if (badge) {
+                    badge.innerText = `${count} 条启用`;
+                    badge.style.color = count > 0 ? '#2ecc71' : '#8e8e93';
+                    badge.style.background = count > 0 ? 'rgba(46,204,113,0.1)' : 'rgba(0,0,0,0.05)';
+                }
+            });
+        }
+
+        // 进入二级详情页
+        function openPromptCategoryDetail(cat) {
+            isPromptInDetailView = true;
+            currentPromptRuleCategory = cat;
+
+            const titles = {
+                char: '人设提示词',
+                greeting: '开场白提示词',
+                worldbook: '世界书提示词',
+                general: '通用提示词 (全局反八股)'
+            };
+            const descs = {
+                char: '开启开关后，生成人设（普通/选项）时将自动载入该条目规则。点击下方【自定义提示词】可自建专属预设。',
+                greeting: '开启开关后，生成开场白剧情时将自动读取该条目规则。点击下方【自定义提示词】可自建专属预设。',
+                worldbook: '开启开关后，生成配套与普通世界书时将自动遵循该条目规则。点击下方【自定义提示词】可自建专属预设。',
+                general: '通用规则只要开启开关，在【人设/开场白/世界书】生成时均会全局生效，杜绝一切八股词。'
+            };
+
+            document.getElementById('prompt-app-header-title').innerText = titles[cat];
+            document.getElementById('btn-prompt-header-add').style.display = 'flex';
+            document.getElementById('detail-section-title').innerText = titles[cat] + " · 条目列表";
+            document.getElementById('detail-section-desc').innerText = descs[cat];
+
+            document.getElementById('prompt-main-menu-panel').style.display = 'none';
+            document.getElementById('prompt-category-detail-panel').style.display = 'block';
+            
+            toggleCustomPromptEditor(false);
+            renderDetailPromptRulesList();
+        }
+
+        // 渲染列表（直接展示全部多条预设）
+        function renderDetailPromptRulesList() {
+            ensurePromptRulesState();
+            const container = document.getElementById('detail-rules-list-container');
+            const list = state.promptRules[currentPromptRuleCategory] || [];
+
+            if (list.length === 0) {
+                container.innerHTML = `<div style="text-align:center; font-size:12px; color:#888; padding:16px;">暂无条目，点击下方「+ 自定义提示词」即可添加</div>`;
+                return;
+            }
+
+            container.innerHTML = list.map(item => `
+                <div style="background: rgba(255,255,255,0.7); border: 1px solid var(--border-glass); border-radius: 14px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 13px; font-weight: bold; color: var(--text-main);">${item.title}</span>
+                            <span style="font-size: 10px; font-weight: bold; color: ${item.enabled ? '#2ecc71' : '#8e8e93'};">${item.enabled ? '● 已启用' : '○ 已关闭'}</span>
+                        </div>
+                        <label class="ios-switch" style="transform: scale(0.85);">
+                            <input type="checkbox" ${item.enabled ? 'checked' : ''} onchange="toggleDetailPromptRuleState(${item.id})">
+                            <span class="ios-slider"></span>
+                        </label>
+                    </div>
+                    <div id="detail-rule-display-${item.id}" style="font-size: 12px; color: var(--text-muted); line-height: 1.5; white-space: pre-wrap; font-family: monospace; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 8px;">${item.content}</div>
+                    <div id="detail-rule-edit-${item.id}" style="display: none; margin-top: 6px;">
+                        <textarea id="detail-rule-textarea-${item.id}" class="input-text" style="height: 80px; font-size: 12px; line-height: 1.5;">${item.content}</textarea>
+                    </div>
+                    <div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap;">
+                        <button class="btn-small" id="btn-detail-edit-${item.id}" onclick="enterEditDetailPromptRule(${item.id})">编辑内容</button>
+                        <button class="btn-small btn-primary" id="btn-detail-save-${item.id}" style="display: none;" onclick="saveEditDetailPromptRule(${item.id})">保存修改</button>
+                        <button class="btn-small" style="color: #e74c3c; background: rgba(231,76,60,0.08);" onclick="deleteDetailPromptRule(${item.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 展开/收起【自定义提示词】输入区
+        function toggleCustomPromptEditor(forceShow) {
+            const panel = document.getElementById('custom-prompt-editor-panel');
+            const btn = document.getElementById('btn-toggle-custom-prompt');
+            const shouldShow = forceShow !== undefined ? forceShow : (panel.style.display === 'none');
+            
+            panel.style.display = shouldShow ? 'block' : 'none';
+            btn.innerText = shouldShow ? '— 收起自定义编辑' : '+ 自定义提示词';
+            
+            if (shouldShow) {
+                document.getElementById('detail-rule-title-input').value = '';
+                document.getElementById('detail-rule-content-input').value = '';
+                document.getElementById('detail-rule-title-input').focus();
+                document.getElementById('custom-prompt-editor-panel').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // 保存自定义预设（追加为一个新条目）
+        async function saveCurrentDetailPromptRule() {
+            const title = document.getElementById('detail-rule-title-input').value.trim();
+            const content = document.getElementById('detail-rule-content-input').value.trim();
+            if (!title || !content) return alert("条目名称与详细内容均不能为空！");
+
+            ensurePromptRulesState();
+            state.promptRules[currentPromptRuleCategory].push({
+                id: Date.now(),
+                title: title,
+                content: content,
+                enabled: true
+            });
+
+            await saveData();
+            toggleCustomPromptEditor(false);
+            renderDetailPromptRulesList();
+            updatePromptCategoryBadges();
+            alert(`已成功添加「${title}」并自动开启生效！`);
+        }
+
+        async function toggleDetailPromptRuleState(id) {
+            ensurePromptRulesState();
+            const item = state.promptRules[currentPromptRuleCategory].find(r => r.id === id);
+            if (item) {
+                item.enabled = !item.enabled;
+                await saveData();
+                renderDetailPromptRulesList();
+                updatePromptCategoryBadges();
+            }
+        }
+
+        function enterEditDetailPromptRule(id) {
+            document.getElementById(`detail-rule-display-${id}`).style.display = 'none';
+            document.getElementById(`detail-rule-edit-${id}`).style.display = 'block';
+            document.getElementById(`btn-detail-edit-${id}`).style.display = 'none';
+            document.getElementById(`btn-detail-save-${id}`).style.display = 'inline-block';
+        }
+
+        async function saveEditDetailPromptRule(id) {
+            const val = document.getElementById(`detail-rule-textarea-${id}`).value.trim();
+            if (!val) return alert("内容不能为空！");
+            const item = state.promptRules[currentPromptRuleCategory].find(r => r.id === id);
+            if (item) {
+                item.content = val;
+                await saveData();
+                renderDetailPromptRulesList();
+                alert("修改已保存！");
+            }
+        }
+
+        async function deleteDetailPromptRule(id) {
+            if (confirm("确定要删除这条提示词条目吗？")) {
+                state.promptRules[currentPromptRuleCategory] = state.promptRules[currentPromptRuleCategory].filter(r => r.id !== id);
+                await saveData();
+                renderDetailPromptRulesList();
+                updatePromptCategoryBadges();
+            }
+        }
+
+        async function resetCurrentCategoryDefaultRules() {
+            if (confirm(`确定要将当前分区的条目重置为默认内置规范吗？`)) {
+                ensurePromptRulesState();
+                state.promptRules[currentPromptRuleCategory] = JSON.parse(JSON.stringify(DEFAULT_PROMPT_RULES[currentPromptRuleCategory] || []));
+                await saveData();
+                renderDetailPromptRulesList();
+                updatePromptCategoryBadges();
+                alert("已恢复默认内置规范！");
+            }
+        }
+
+        // 全局读取约束引擎
+        function getActivePromptRulesText(category) {
+            ensurePromptRulesState();
+            let activeRules = [];
+
+            // 1. 读取该分类开启的词条
+            if (state.promptRules[category]) {
+                state.promptRules[category].forEach(r => {
+                    if (r.enabled && r.content && r.content.trim()) {
+                        activeRules.push(`- 【${r.title}】：${r.content.trim()}`);
+                    }
+                });
+            }
+
+            // 2. 读取通用分类开启的词条（全局联动）
+            if (category !== 'general' && state.promptRules.general) {
+                state.promptRules.general.forEach(r => {
+                    if (r.enabled && r.content && r.content.trim()) {
+                        activeRules.push(`- 【通用-${r.title}】：${r.content.trim()}`);
+                    }
+                });
+            }
+
+            if (activeRules.length === 0) return '';
+            return `\n\n【极其重要的提示词规则约束与去八股规范（必须严格贯穿遵循）】：\n${activeRules.join('\n')}\n`;
+        }
+
         // 自动将自建模板挂载到 Char 生成器与 User 生成器中
         function refreshCharTemplateDropdowns() {
             const s1 = document.getElementById('char-template-select');
@@ -7204,20 +7608,23 @@ ${getCharTemplate(true)}`;
             ], stream, (upd) => { ta.value = upd; }, (fin) => { ta.value = fin; }, (err) => { ta.value = "[错误] " + err; }, state.vApiProxy);
         }
 
-        // 选项人设生成 API 模块派发
+        // ==================== 选项人设生成 API 模块派发 (全面支持自建模板) ====================
         function generateOptionCharacter() {
             const streamMode = document.querySelector('input[name="api_option_stream_mode"]:checked').value === 'stream';
             
-            // 动态选择对应的人设模板与水印
-            let currentTemplateType = state.char_template_type || 'earphone';
-            let activeTemplate = currentTemplateType === 'earphone' ? getCharTemplate(document.getElementById('nsfw-option-cb').checked) : TEMPLATE_WENWULEI;
-            let startWatermark = currentTemplateType === 'earphone' ? WATERMARK : WATERMARK_WENWULEI_START;
-            let endWatermark = currentTemplateType === 'earphone' ? '' : WATERMARK_WENWULEI_END;
+            // 动态选择对应的人设模板与水印（支持耳机模板、吻我涙模板及全部自建模板）
+            const templateKey = document.getElementById('char-option-template-select')?.value || state.char_template_type || 'earphone';
+            const isNsfw = document.getElementById('nsfw-option-cb')?.checked;
+            const templateInfo = resolveCharTemplate(templateKey, isNsfw);
+            let activeTemplate = templateInfo.template;
+            let startWatermark = templateInfo.startWatermark;
+            let endWatermark = templateInfo.endWatermark;
 
             // 选项多人生成分支
             if (isMultiCharOption) {
                 const groupName = document.getElementById('multi-char-option-group-name').value.trim() || "多人选项群像组合";
                 const rels = document.getElementById('multi-option-relations-input').value.trim();
+                const extraNotes = document.getElementById('char-option-direction').value.trim();
                 if (multiOptionMembers.length < 2) return alert("请至少暂存 2 位多人选项角色再点击生成！");
 
                 let sysPrompt = `你是一个专业的多人角色群像卡创作大师。请基于提供的各角色标签设定，为用户一次性生成包含【${multiOptionMembers.map(m=>m.name).join('、')}】共 ${multiOptionMembers.length} 位角色的组合人设卡。
@@ -7241,9 +7648,10 @@ ${activeTemplate}
                     if (m.tags.archetype) tagsDesc.push(`塑形：${m.tags.archetype}`);
                     if (m.tags.personality && m.tags.personality.length) tagsDesc.push(`性格：${m.tags.personality.join('、')}`);
                     if (m.tags.occupation && m.tags.occupation.length) tagsDesc.push(`职业：${m.tags.occupation.join('、')}`);
-                    userContent += `角色${idx+1}【${m.name}】：\n- 标签：${tagsDesc.join(' | ') || '无特定标签'}\n- 补充大纲：${m.direction || '无'}\n\n`;
+                    userContent += `角色${idx+1}【${m.name}】：\n- 标签：${tagsDesc.join(' | ') || '无特定标签'}\n- 该角色补充：${m.direction || '无'}\n\n`;
                 });
 
+                if (extraNotes) userContent += `【全员其余补充设定（必须严格参考融入）】：\n${extraNotes}\n\n`;
                 if (rels) userContent += `【角色间关系网要求】：\n${rels}\n`;
 
                 const sb = document.getElementById('char-option-stream-box');
@@ -7270,14 +7678,13 @@ ${activeTemplate}
                 return;
             }
 
-            // 单人选项生成原逻辑
+            // 单人选项生成逻辑
             const charName = document.getElementById('char-option-name-input').value.trim() || "未命名";
             const supplementDir = document.getElementById('char-option-direction').value.trim();
             document.getElementById('char-multi-subtabs-option').style.display = 'none';
 
             let sysPrompt = `你是一个专业的人设生成器。请完全以以下模板格式和排版输出：\n\n${activeTemplate}`;
             
-            // 限制
             const forbiddenDir = document.getElementById('char-option-forbidden-direction')?.value.trim();
             if (forbiddenDir) {
                 sysPrompt += `\n\n【极其重要的负面禁止约束 (CRITICAL NEGATIVE CONSTRAINTS)】：\n在生成该角色的人设时，必须绝对严格禁止、抹除并避免出现以下内容或写作倾向：\n- ${forbiddenDir}\n请确保最终生成的所有模板属性中，没有任何字眼、设定或表现暗示违反上述禁止约束。`;
@@ -7292,7 +7699,6 @@ ${activeTemplate}
             if (selectedTags.personality.length > 0) tagsDescription += `性格标签：${selectedTags.personality.join('、')}\n`;
             if (selectedTags.occupation.length > 0) tagsDescription += `身份/职业：${selectedTags.occupation.join('、')}\n`;
 
-            // 全自动读取、匹配装载动态大分类
             if (state.customCategories && state.customCategories.length > 0) {
                 state.customCategories.forEach(cat => {
                     const val = selectedTags.custom[cat.id];
@@ -7342,112 +7748,20 @@ ${activeTemplate}
             }, state.tApiProxy);
         }
 
-        // 选项继续生成
         function continueGenerateOptionCharacter() {
             let base = document.getElementById('char-option-stream-box').innerText;
             
-            // 动态清洗
             if (base.startsWith(WATERMARK)) base = base.substring(WATERMARK.length);
             if (base.startsWith(WATERMARK_WENWULEI_START)) base = base.substring(WATERMARK_WENWULEI_START.length);
             if (base.endsWith(WATERMARK_WENWULEI_END)) base = base.substring(0, base.length - WATERMARK_WENWULEI_END.length);
 
             const sb = document.getElementById('char-option-stream-box');
-            
-            let currentTemplateType = state.char_template_type || 'earphone';
-            let startWatermark = currentTemplateType === 'earphone' ? WATERMARK : WATERMARK_WENWULEI_START;
-            let endWatermark = currentTemplateType === 'earphone' ? '' : WATERMARK_WENWULEI_END;
+            const templateKey = document.getElementById('char-option-template-select')?.value || state.char_template_type || 'earphone';
+            const templateInfo = resolveCharTemplate(templateKey, document.getElementById('nsfw-option-cb')?.checked);
+            let startWatermark = templateInfo.startWatermark;
+            let endWatermark = templateInfo.endWatermark;
 
             sb.innerText = startWatermark + base + "\n\n正在续写人设...";
-            document.getElementById('post-gen-option-retry-row').style.display = 'none';
-            document.getElementById('post-gen-option-action-row').style.display = 'none';
-
-            let sysPrompt = `你是一个专业的人设生成器。请完全以极佳的排版接续上文，无缝补全剩下的属性设定，绝对不要输出多余的引言 and 寒暄，直接紧接着上文继续输出。`;
-            if (state.jailbreakEnabled && state.jailbreakPrompt) {
-                sysPrompt += `\n\n[极其重要的破限特殊指令（必须严格执行）]：\n${state.jailbreakPrompt}`;
-            }
-
-            callTextAPI(state.tApiUrl, state.tApiKey, state.tApiModel, sysPrompt, [{role:"user", content: `[已写到一半的人设卡内容如下]：\n${base}\n\n【请紧接着上文最后一行无缝继续往下输出】：`}], true, (txt) => {
-                sb.innerText = startWatermark + base + txt;
-            }, (fin) => {
-                sb.innerText = startWatermark + base + fin + endWatermark;
-                document.getElementById('post-gen-option-retry-row').style.display = 'flex';
-                document.getElementById('post-gen-option-action-row').style.display = 'flex';
-            }, (err) => {
-                sb.innerText = "中断: " + err;
-            }, state.tApiProxy);
-        }
-
-        function regenerateOptionCharacter() {
-            document.getElementById('char-option-stream-box').innerText = '';
-            generateOptionCharacter();
-        }
-
-        async function saveOptionCharWithoutEdit() {
-            const newCard = {
-                id: Date.now(),
-                name: document.getElementById('char-option-name-input').value.trim() || "未命名",
-                avatar: tempOptionAvatarStr,
-                content: document.getElementById('char-option-stream-box').innerText,
-                worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
-                ifLines: [],
-                folder: '首页',
-                tags: []
-            };
-            state.cards.unshift(newCard);
-            await saveData();
-            renderCardList('首页');
-            tempGeneratedCard = newCard.id;
-            document.getElementById('post-gen-option-action-row').style.display = 'none';
-            document.getElementById('wb-option-prompt-card').style.display = 'block';
-        }
-
-        function enterOptionCharEditMode() {
-            document.getElementById('char-option-stream-box').style.display = 'none';
-            document.getElementById('post-gen-option-retry-row').style.display = 'none';
-            document.getElementById('post-gen-option-action-row').style.display = 'none';
-            document.getElementById('avatar-option-edit-textarea').value = document.getElementById('char-option-stream-box').innerText;
-            document.getElementById('post-option-edit-panel').style.display = 'block';
-        }
-
-        async function saveOptionCharWithEdit() {
-            const newCard = {
-                id: Date.now(),
-                name: document.getElementById('char-option-name-input').value.trim() || "已微调",
-                avatar: tempOptionAvatarStr,
-                content: document.getElementById('avatar-option-edit-textarea').value,
-                worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
-                ifLines: [],
-                folder: '首页',
-                tags: []
-            };
-            state.cards.unshift(newCard);
-            await saveData();
-            renderCardList('首页');
-            tempGeneratedCard = newCard.id;
-            document.getElementById('post-option-edit-panel').style.display = 'none';
-            document.getElementById('wb-option-prompt-card').style.display = 'block';
-        }
-
-        function resetOptionMainPage() {
-            document.getElementById('char-option-name-input').value = '';
-            document.getElementById('char-option-direction').value = '';
-            document.getElementById('avatar-option-preview').style.display = 'none';
-            document.getElementById('char-option-stream-box').style.display = 'none';
-            document.getElementById('wb-option-prompt-card').style.display = 'none';
-            tempOptionAvatarStr = '';
-            selectedTags = { gender: null, orientation: null, age: null, archetype: null, personality: [], occupation: [], custom: {} };
-            renderAllSelectableTags();
-        }
-
-        function skipOptionWorldbook() { switchView('view-char-preview'); }
-        function startOptionWorldbookCascade() { switchView('view-world-book'); document.getElementById('wb-char-select').value = tempGeneratedCard; }
-
-        // 选项人设继续生成
-        function continueGenerateOptionCharacter() {
-            let base = document.getElementById('char-option-stream-box').innerText;
-            if (base.startsWith(WATERMARK)) base = base.substring(WATERMARK.length);
-            const sb = document.getElementById('char-option-stream-box');
-            sb.innerText = WATERMARK + base + "\n\n正在续写人设...";
             document.getElementById('post-gen-option-retry-row').style.display = 'none';
             document.getElementById('post-gen-option-action-row').style.display = 'none';
 
@@ -7457,9 +7771,9 @@ ${activeTemplate}
             }
 
             callTextAPI(state.tApiUrl, state.tApiKey, state.tApiModel, sysPrompt, [{role:"user", content: `[已写到一半的人设卡内容如下]：\n${base}\n\n【请紧接着上文最后一行无缝继续往下输出】：`}], true, (txt) => {
-                sb.innerText = WATERMARK + base + txt;
+                sb.innerText = startWatermark + base + txt;
             }, (fin) => {
-                sb.innerText = WATERMARK + base + fin;
+                sb.innerText = startWatermark + base + fin + endWatermark;
                 document.getElementById('post-gen-option-retry-row').style.display = 'flex';
                 document.getElementById('post-gen-option-action-row').style.display = 'flex';
             }, (err) => {
@@ -7576,7 +7890,7 @@ ${activeTemplate}
             document.getElementById('char-option-stream-box').style.display = 'none';
             document.getElementById('wb-option-prompt-card').style.display = 'none';
             tempOptionAvatarStr = '';
-            selectedTags = { gender: null, personality: [], occupation: [] };
+            selectedTags = { gender: null, orientation: null, age: null, archetype: null, personality: [], occupation: [], custom: {} };
             renderAllSelectableTags();
         }
 
