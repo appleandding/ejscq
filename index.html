@@ -1991,13 +1991,6 @@ age：年龄
         <div class="app-header">
             <button class="back-btn" onclick="handlePromptBackBtn()"><svg><path d="M15 19l-7-7 7-7"/></svg></button>
             <span class="app-title" id="prompt-app-header-title">提示词</span>
-            <!-- 二级页面右上角快速添加按钮 -->
-            <button class="icon-btn" id="btn-prompt-header-add" onclick="toggleCustomPromptEditor(true)" style="margin-left:auto; display:none;">
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-            </button>
         </div>
         
         <!-- 一级视图：4 个分区垂直排列的列表卡片（无emoji，绝对并列防折行） -->
@@ -2005,7 +1998,7 @@ age：年龄
             <div class="engine-card" style="margin-bottom: 14px; border-left: 4px solid #222; padding: 14px;">
                 <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">提示词规则与去八股中枢</div>
                 <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
-                    点击下方各个分区进入设置页，可自建与管理提示词。开启开关后，各生成器在调用 API 时将自动注入规避八股套话。
+                    点击下方分区可查看内置规范或切换为纯自定义提示词。开启后，各生成器在调用 API 时将自动注入生效。
                 </div>
             </div>
 
@@ -2021,7 +2014,7 @@ age：年龄
                         </div>
                     </div>
                     <div style="flex-shrink: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
-                        <span id="badge-prompt-count-char" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">0 条启用</span>
+                        <span id="badge-prompt-count-char" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">内置模式</span>
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-light);"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </div>
                 </div>
@@ -2037,7 +2030,7 @@ age：年龄
                         </div>
                     </div>
                     <div style="flex-shrink: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
-                        <span id="badge-prompt-count-greeting" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">0 条启用</span>
+                        <span id="badge-prompt-count-greeting" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">内置模式</span>
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-light);"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </div>
                 </div>
@@ -2053,7 +2046,7 @@ age：年龄
                         </div>
                     </div>
                     <div style="flex-shrink: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
-                        <span id="badge-prompt-count-worldbook" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">0 条启用</span>
+                        <span id="badge-prompt-count-worldbook" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">内置模式</span>
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-light);"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </div>
                 </div>
@@ -2069,53 +2062,73 @@ age：年龄
                         </div>
                     </div>
                     <div style="flex-shrink: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
-                        <span id="badge-prompt-count-general" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">0 条启用</span>
+                        <span id="badge-prompt-count-general" style="font-size: 11px; font-weight: 600; color: #2ecc71; background: rgba(46,204,113,0.1); padding: 4px 10px; border-radius: 12px; white-space: nowrap; display: inline-block;">内置模式</span>
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-light);"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 二级子视图：具体分区的提示词规则管理页面 -->
+        <!-- 二级子视图：具体分区的详细管理面板 -->
         <div id="prompt-category-detail-panel" style="display: none; margin-top: 16px;">
-            <!-- 头部说明 -->
-            <div class="engine-card" style="padding: 14px; margin-bottom: 12px;">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;" id="detail-section-title">提示词规则预设</div>
-                <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;" id="detail-section-desc">
-                    开启开关后，生成时将自动读取该条目规则。点击下方【自定义提示词】可自建新预设。
+            
+            <!-- 分支一：内置预设容器（使用内置时展示，点击自定义后彻底隐藏并不读取） -->
+            <div id="prompt-builtin-mode-box">
+                <div class="engine-card" style="padding: 14px; margin-bottom: 12px;">
+                    <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;" id="builtin-section-title">内置提示词规则</div>
+                    <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
+                        当前正在使用官方内置预设。如果需要完全使用自己的提示词，请点击下方按键切换为自定义提示词。
+                    </div>
+                </div>
+
+                <div class="engine-card" style="margin-bottom: 14px;">
+                    <div style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-bottom: 12px;">内置规则条目：</div>
+                    <div id="builtin-rules-list-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+
+                <!-- 切换到自定义按键 -->
+                <button class="btn btn-primary" onclick="switchToCustomPromptMode()" style="width: 100%; padding: 14px; font-size: 14px; font-weight: bold;">
+                    切换为自定义提示词（停止读取内置）
+                </button>
+            </div>
+
+            <!-- 分支二：自定义提示词容器（切换后内置彻底消失，仅读取自定义） -->
+            <div id="prompt-custom-mode-box" style="display: none;">
+                <!-- 顶部返回内置按键 -->
+                <button class="btn btn-secondary" onclick="switchToBuiltinPromptMode()" style="width: 100%; margin-bottom: 14px; padding: 10px; font-size: 12px; border: 1px solid var(--border-subtle);">
+                    ← 返回使用内置预设规范
+                </button>
+
+                <!-- 自定义提示词空白填写与保存设置 -->
+                <div class="engine-card" style="margin-bottom: 14px;">
+                    <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;" id="custom-section-title">自定义提示词设置</div>
+                    <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+                        已停用内置规范。请在下方填写您的提示词并保存，生成时将仅严格读取此处启用的自定义条目。
+                    </div>
+
+                    <div class="form-group">
+                        <label>提示词预设名称：</label>
+                        <input type="text" id="custom-prompt-title-input" class="input-text" placeholder="例如：我的高冷人设专属词、去八股定制规则...">
+                    </div>
+
+                    <div class="form-group">
+                        <label>详细提示词内容（大模型约束规则）：</label>
+                        <textarea id="custom-prompt-content-input" class="input-text" style="height: 110px; font-size: 12px; line-height: 1.5;" placeholder="在此输入自定义指令，例如：严禁使用'仿佛'等词，强制写具体动作..."></textarea>
+                    </div>
+
+                    <div class="btn-row" style="margin-bottom: 0;">
+                        <button class="btn btn-primary" style="flex: 1;" onclick="saveCustomPromptRule()">保存为此分区提示词</button>
+                        <button class="btn btn-secondary" style="flex: 0 0 80px;" onclick="clearCustomPromptInputs()">清空</button>
+                    </div>
+                </div>
+
+                <!-- 已保存的自定义提示词列表 -->
+                <div class="engine-card">
+                    <div style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-bottom: 12px;">我的自建提示词库：</div>
+                    <div id="custom-rules-list-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
             </div>
 
-            <!-- 已有预设列表（直接平铺展示全部多条预设） -->
-            <div class="engine-card" style="margin-bottom: 14px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div style="font-size: 13px; font-weight: bold; color: var(--text-main);">预设条目列表：</div>
-                    <button class="btn-small" onclick="resetCurrentCategoryDefaultRules()" style="font-size: 10px; padding: 2px 8px; background: rgba(0,0,0,0.04);">恢复内置默认</button>
-                </div>
-                <div id="detail-rules-list-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
-            </div>
-
-            <!-- 【自定义提示词】唤起按钮 -->
-            <button class="btn btn-secondary" id="btn-toggle-custom-prompt" onclick="toggleCustomPromptEditor()" style="width: 100%; margin-bottom: 14px; border: 1.5px dashed var(--border-subtle); padding: 12px; font-size: 13px; font-weight: 600;">
-                + 自定义提示词
-            </button>
-
-            <!-- 点击【自定义提示词】后展开的空白填写与保存面板 -->
-            <div id="custom-prompt-editor-panel" class="engine-card" style="display: none; background: rgba(255, 255, 255, 0.85); border: 1.5px solid var(--accent);">
-                <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px;">新建自定义提示词条目</div>
-                <div class="form-group">
-                    <label>预设名称 / 标签：</label>
-                    <input type="text" id="detail-rule-title-input" class="input-text" placeholder="例如：电影感微表情描写、禁止现代违和语...">
-                </div>
-                <div class="form-group">
-                    <label>详细提示词内容（大模型约束规则）：</label>
-                    <textarea id="detail-rule-content-input" class="input-text" style="height: 110px; font-size: 12px; line-height: 1.5;" placeholder="在此输入自定义指令，例如：严禁使用'嘴角勾起弧度'、'仿佛'等网文烂俗套话；多描写具体动作与眼神神态..."></textarea>
-                </div>
-                <div class="btn-row" style="margin-bottom: 0;">
-                    <button class="btn btn-primary" style="flex: 1;" onclick="saveCurrentDetailPromptRule()">保存此提示词条目</button>
-                    <button class="btn btn-secondary" style="flex: 0 0 80px;" onclick="toggleCustomPromptEditor(false)">收起</button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -6331,7 +6344,7 @@ ${getCharTemplate(true)}`;
         let currentPromptRuleCategory = 'char'; // 'char' | 'greeting' | 'worldbook' | 'general'
         let isPromptInDetailView = false; // 记录是否处于二级子页面
 
-        // 默认内置预设词条库（纯净无emoji）
+        // 默认内置预设词条库
         const DEFAULT_PROMPT_RULES = {
             char: [
                 { id: 101, title: '立体人设与反差感', content: '避免扁平脸谱化设定，角色需具备自洽的行为动机、真实的心理防线，在人前人后展现自然的性格反差细节。', enabled: true },
@@ -6354,10 +6367,17 @@ ${getCharTemplate(true)}`;
             if (!state.promptRules) {
                 state.promptRules = JSON.parse(JSON.stringify(DEFAULT_PROMPT_RULES));
             }
-            if (!state.promptRules.char) state.promptRules.char = [];
-            if (!state.promptRules.greeting) state.promptRules.greeting = [];
-            if (!state.promptRules.worldbook) state.promptRules.worldbook = [];
-            if (!state.promptRules.general) state.promptRules.general = [];
+            if (!state.promptModes) {
+                state.promptModes = { char: 'builtin', greeting: 'builtin', worldbook: 'builtin', general: 'builtin' };
+            }
+            if (!state.customPrompts) {
+                state.customPrompts = { char: [], greeting: [], worldbook: [], general: [] };
+            }
+            ['char', 'greeting', 'worldbook', 'general'].forEach(c => {
+                if (!state.promptRules[c]) state.promptRules[c] = [];
+                if (!state.customPrompts[c]) state.customPrompts[c] = [];
+                if (!state.promptModes[c]) state.promptModes[c] = 'builtin';
+            });
         }
 
         // 统一返回按钮控制器
@@ -6373,28 +6393,37 @@ ${getCharTemplate(true)}`;
         function showPromptMainMenu() {
             isPromptInDetailView = false;
             document.getElementById('prompt-app-header-title').innerText = "提示词";
-            document.getElementById('btn-prompt-header-add').style.display = 'none';
             document.getElementById('prompt-main-menu-panel').style.display = 'block';
             document.getElementById('prompt-category-detail-panel').style.display = 'none';
             updatePromptCategoryBadges();
         }
 
-        // 更新 4 分区卡片角标
+        // 更新 4 分区卡片状态角标
         function updatePromptCategoryBadges() {
             ensurePromptRulesState();
             const cats = ['char', 'greeting', 'worldbook', 'general'];
             cats.forEach(c => {
-                const count = (state.promptRules[c] || []).filter(r => r.enabled).length;
+                const mode = state.promptModes[c] || 'builtin';
+                const count = mode === 'builtin' 
+                    ? (state.promptRules[c] || []).filter(r => r.enabled).length 
+                    : (state.customPrompts[c] || []).filter(r => r.enabled).length;
+                
                 const badge = document.getElementById(`badge-prompt-count-${c}`);
                 if (badge) {
-                    badge.innerText = `${count} 条启用`;
-                    badge.style.color = count > 0 ? '#2ecc71' : '#8e8e93';
-                    badge.style.background = count > 0 ? 'rgba(46,204,113,0.1)' : 'rgba(0,0,0,0.05)';
+                    if (mode === 'builtin') {
+                        badge.innerText = `内置模式 (${count}条)`;
+                        badge.style.color = '#2ecc71';
+                        badge.style.background = 'rgba(46,204,113,0.1)';
+                    } else {
+                        badge.innerText = `自定义 (${count}条)`;
+                        badge.style.color = '#3498db';
+                        badge.style.background = 'rgba(52,152,219,0.1)';
+                    }
                 }
             });
         }
 
-        // 进入二级详情页
+        // 进入具体分区的二级详情管理子页面
         function openPromptCategoryDetail(cat) {
             isPromptInDetailView = true;
             currentPromptRuleCategory = cat;
@@ -6405,35 +6434,55 @@ ${getCharTemplate(true)}`;
                 worldbook: '世界书提示词',
                 general: '通用提示词 (全局反八股)'
             };
-            const descs = {
-                char: '开启开关后，生成人设（普通/选项）时将自动载入该条目规则。点击下方【自定义提示词】可自建专属预设。',
-                greeting: '开启开关后，生成开场白剧情时将自动读取该条目规则。点击下方【自定义提示词】可自建专属预设。',
-                worldbook: '开启开关后，生成配套与普通世界书时将自动遵循该条目规则。点击下方【自定义提示词】可自建专属预设。',
-                general: '通用规则只要开启开关，在【人设/开场白/世界书】生成时均会全局生效，杜绝一切八股词。'
-            };
 
             document.getElementById('prompt-app-header-title').innerText = titles[cat];
-            document.getElementById('btn-prompt-header-add').style.display = 'flex';
-            document.getElementById('detail-section-title').innerText = titles[cat] + " · 条目列表";
-            document.getElementById('detail-section-desc').innerText = descs[cat];
-
             document.getElementById('prompt-main-menu-panel').style.display = 'none';
             document.getElementById('prompt-category-detail-panel').style.display = 'block';
             
-            toggleCustomPromptEditor(false);
-            renderDetailPromptRulesList();
+            renderCategoryCurrentModeView();
         }
 
-        // 渲染列表（直接展示全部多条预设）
-        function renderDetailPromptRulesList() {
+        // 渲染当前分区处于内置模式还是自定义模式
+        function renderCategoryCurrentModeView() {
             ensurePromptRulesState();
-            const container = document.getElementById('detail-rules-list-container');
-            const list = state.promptRules[currentPromptRuleCategory] || [];
+            const mode = state.promptModes[currentPromptRuleCategory] || 'builtin';
+            const builtinBox = document.getElementById('prompt-builtin-mode-box');
+            const customBox = document.getElementById('prompt-custom-mode-box');
 
-            if (list.length === 0) {
-                container.innerHTML = `<div style="text-align:center; font-size:12px; color:#888; padding:16px;">暂无条目，点击下方「+ 自定义提示词」即可添加</div>`;
-                return;
+            if (mode === 'builtin') {
+                builtinBox.style.display = 'block';
+                customBox.style.display = 'none';
+                renderBuiltinRulesList();
+            } else {
+                builtinBox.style.display = 'none';
+                customBox.style.display = 'block';
+                renderCustomRulesList();
             }
+        }
+
+        // 【核心交互】：切换到自定义模式（内置立刻隐藏，彻底停止读取内置）
+        async function switchToCustomPromptMode() {
+            ensurePromptRulesState();
+            state.promptModes[currentPromptRuleCategory] = 'custom';
+            await saveData();
+            renderCategoryCurrentModeView();
+            updatePromptCategoryBadges();
+            clearCustomPromptInputs();
+        }
+
+        // 【核心交互】：返回使用内置模式（自定义隐藏，恢复读取内置）
+        async function switchToBuiltinPromptMode() {
+            ensurePromptRulesState();
+            state.promptModes[currentPromptRuleCategory] = 'builtin';
+            await saveData();
+            renderCategoryCurrentModeView();
+            updatePromptCategoryBadges();
+        }
+
+        // 渲染内置规则条目
+        function renderBuiltinRulesList() {
+            const container = document.getElementById('builtin-rules-list-container');
+            const list = state.promptRules[currentPromptRuleCategory] || [];
 
             container.innerHTML = list.map(item => `
                 <div style="background: rgba(255,255,255,0.7); border: 1px solid var(--border-glass); border-radius: 14px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
@@ -6443,48 +6492,65 @@ ${getCharTemplate(true)}`;
                             <span style="font-size: 10px; font-weight: bold; color: ${item.enabled ? '#2ecc71' : '#8e8e93'};">${item.enabled ? '● 已启用' : '○ 已关闭'}</span>
                         </div>
                         <label class="ios-switch" style="transform: scale(0.85);">
-                            <input type="checkbox" ${item.enabled ? 'checked' : ''} onchange="toggleDetailPromptRuleState(${item.id})">
+                            <input type="checkbox" ${item.enabled ? 'checked' : ''} onchange="toggleBuiltinRuleState(${item.id})">
                             <span class="ios-slider"></span>
                         </label>
                     </div>
-                    <div id="detail-rule-display-${item.id}" style="font-size: 12px; color: var(--text-muted); line-height: 1.5; white-space: pre-wrap; font-family: monospace; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 8px;">${item.content}</div>
-                    <div id="detail-rule-edit-${item.id}" style="display: none; margin-top: 6px;">
-                        <textarea id="detail-rule-textarea-${item.id}" class="input-text" style="height: 80px; font-size: 12px; line-height: 1.5;">${item.content}</textarea>
+                    <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; white-space: pre-wrap; font-family: monospace; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 8px;">${item.content}</div>
+                </div>
+            `).join('');
+        }
+
+        async function toggleBuiltinRuleState(id) {
+            ensurePromptRulesState();
+            const item = state.promptRules[currentPromptRuleCategory].find(r => r.id === id);
+            if (item) {
+                item.enabled = !item.enabled;
+                await saveData();
+                renderBuiltinRulesList();
+                updatePromptCategoryBadges();
+            }
+        }
+
+        // 渲染自定义提示词列表（一条条往下排列，支持加载到输入框、删除、独立开关）
+        function renderCustomRulesList() {
+            const container = document.getElementById('custom-rules-list-container');
+            const list = state.customPrompts[currentPromptRuleCategory] || [];
+
+            if (list.length === 0) {
+                container.innerHTML = `<div style="text-align:center; font-size:12px; color:#888; padding:16px;">暂无自定义提示词条目，请在上方填写后点击保存</div>`;
+                return;
+            }
+
+            container.innerHTML = list.map(item => `
+                <div style="background: rgba(255,255,255,0.7); border: 1px solid var(--border-glass); border-radius: 14px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 13px; font-weight: bold; color: var(--text-main);">${item.title}</span>
+                            <span style="font-size: 10px; font-weight: bold; color: ${item.enabled ? '#3498db' : '#8e8e93'};">${item.enabled ? '● 已启用' : '○ 已关闭'}</span>
+                        </div>
+                        <label class="ios-switch" style="transform: scale(0.85);">
+                            <input type="checkbox" ${item.enabled ? 'checked' : ''} onchange="toggleCustomRuleState(${item.id})">
+                            <span class="ios-slider"></span>
+                        </label>
                     </div>
-                    <div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap;">
-                        <button class="btn-small" id="btn-detail-edit-${item.id}" onclick="enterEditDetailPromptRule(${item.id})">编辑内容</button>
-                        <button class="btn-small btn-primary" id="btn-detail-save-${item.id}" style="display: none;" onclick="saveEditDetailPromptRule(${item.id})">保存修改</button>
-                        <button class="btn-small" style="color: #e74c3c; background: rgba(231,76,60,0.08);" onclick="deleteDetailPromptRule(${item.id})">删除</button>
+                    <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; white-space: pre-wrap; font-family: monospace; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 8px;">${item.content}</div>
+                    <div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px;">
+                        <button class="btn-small btn-primary" onclick="loadCustomPromptToEditor(${item.id})">加载到输入框</button>
+                        <button class="btn-small" style="color: #e74c3c; background: rgba(231,76,60,0.08);" onclick="deleteCustomPromptRule(${item.id})">删除</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        // 展开/收起【自定义提示词】输入区
-        function toggleCustomPromptEditor(forceShow) {
-            const panel = document.getElementById('custom-prompt-editor-panel');
-            const btn = document.getElementById('btn-toggle-custom-prompt');
-            const shouldShow = forceShow !== undefined ? forceShow : (panel.style.display === 'none');
-            
-            panel.style.display = shouldShow ? 'block' : 'none';
-            btn.innerText = shouldShow ? '— 收起自定义编辑' : '+ 自定义提示词';
-            
-            if (shouldShow) {
-                document.getElementById('detail-rule-title-input').value = '';
-                document.getElementById('detail-rule-content-input').value = '';
-                document.getElementById('detail-rule-title-input').focus();
-                document.getElementById('custom-prompt-editor-panel').scrollIntoView({ behavior: 'smooth' });
-            }
-        }
-
-        // 保存自定义预设（追加为一个新条目）
-        async function saveCurrentDetailPromptRule() {
-            const title = document.getElementById('detail-rule-title-input').value.trim();
-            const content = document.getElementById('detail-rule-content-input').value.trim();
-            if (!title || !content) return alert("条目名称与详细内容均不能为空！");
+        // 保存一条自定义提示词
+        async function saveCustomPromptRule() {
+            const title = document.getElementById('custom-prompt-title-input').value.trim();
+            const content = document.getElementById('custom-prompt-content-input').value.trim();
+            if (!title || !content) return alert("提示词名称与详细内容均不能为空！");
 
             ensurePromptRulesState();
-            state.promptRules[currentPromptRuleCategory].push({
+            state.customPrompts[currentPromptRuleCategory].push({
                 id: Date.now(),
                 title: title,
                 content: content,
@@ -6492,87 +6558,89 @@ ${getCharTemplate(true)}`;
             });
 
             await saveData();
-            toggleCustomPromptEditor(false);
-            renderDetailPromptRulesList();
+            clearCustomPromptInputs();
+            renderCustomRulesList();
             updatePromptCategoryBadges();
-            alert(`已成功添加「${title}」并自动开启生效！`);
+            alert(`已成功保存自定义提示词「${title}」并自动启用！`);
         }
 
-        async function toggleDetailPromptRuleState(id) {
+        // 加载到输入框
+        function loadCustomPromptToEditor(id) {
             ensurePromptRulesState();
-            const item = state.promptRules[currentPromptRuleCategory].find(r => r.id === id);
+            const item = state.customPrompts[currentPromptRuleCategory].find(r => r.id === id);
+            if (item) {
+                document.getElementById('custom-prompt-title-input').value = item.title;
+                document.getElementById('custom-prompt-content-input').value = item.content;
+                document.getElementById('custom-prompt-title-input').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function clearCustomPromptInputs() {
+            document.getElementById('custom-prompt-title-input').value = '';
+            document.getElementById('custom-prompt-content-input').value = '';
+        }
+
+        async function toggleCustomRuleState(id) {
+            ensurePromptRulesState();
+            const item = state.customPrompts[currentPromptRuleCategory].find(r => r.id === id);
             if (item) {
                 item.enabled = !item.enabled;
                 await saveData();
-                renderDetailPromptRulesList();
+                renderCustomRulesList();
                 updatePromptCategoryBadges();
             }
         }
 
-        function enterEditDetailPromptRule(id) {
-            document.getElementById(`detail-rule-display-${id}`).style.display = 'none';
-            document.getElementById(`detail-rule-edit-${id}`).style.display = 'block';
-            document.getElementById(`btn-detail-edit-${id}`).style.display = 'none';
-            document.getElementById(`btn-detail-save-${id}`).style.display = 'inline-block';
-        }
-
-        async function saveEditDetailPromptRule(id) {
-            const val = document.getElementById(`detail-rule-textarea-${id}`).value.trim();
-            if (!val) return alert("内容不能为空！");
-            const item = state.promptRules[currentPromptRuleCategory].find(r => r.id === id);
-            if (item) {
-                item.content = val;
+        async function deleteCustomPromptRule(id) {
+            if (confirm("确定要删除这条自定义提示词吗？")) {
+                state.customPrompts[currentPromptRuleCategory] = state.customPrompts[currentPromptRuleCategory].filter(r => r.id !== id);
                 await saveData();
-                renderDetailPromptRulesList();
-                alert("修改已保存！");
-            }
-        }
-
-        async function deleteDetailPromptRule(id) {
-            if (confirm("确定要删除这条提示词条目吗？")) {
-                state.promptRules[currentPromptRuleCategory] = state.promptRules[currentPromptRuleCategory].filter(r => r.id !== id);
-                await saveData();
-                renderDetailPromptRulesList();
+                renderCustomRulesList();
                 updatePromptCategoryBadges();
             }
         }
 
-        async function resetCurrentCategoryDefaultRules() {
-            if (confirm(`确定要将当前分区的条目重置为默认内置规范吗？`)) {
-                ensurePromptRulesState();
-                state.promptRules[currentPromptRuleCategory] = JSON.parse(JSON.stringify(DEFAULT_PROMPT_RULES[currentPromptRuleCategory] || []));
-                await saveData();
-                renderDetailPromptRulesList();
-                updatePromptCategoryBadges();
-                alert("已恢复默认内置规范！");
-            }
-        }
-
-        // 全局读取约束引擎
+        // 【精准单路读取引擎】：根据当前模式，精准决定读取内置还是读取自定义
         function getActivePromptRulesText(category) {
             ensurePromptRulesState();
             let activeRules = [];
 
-            // 1. 读取该分类开启的词条
-            if (state.promptRules[category]) {
-                state.promptRules[category].forEach(r => {
+            // 1. 处理当前分类（若为自定义模式则绝对不读内置！）
+            const mode = state.promptModes[category] || 'builtin';
+            if (mode === 'custom') {
+                (state.customPrompts[category] || []).forEach(r => {
+                    if (r.enabled && r.content && r.content.trim()) {
+                        activeRules.push(`- 【${r.title}】：${r.content.trim()}`);
+                    }
+                });
+            } else {
+                (state.promptRules[category] || []).forEach(r => {
                     if (r.enabled && r.content && r.content.trim()) {
                         activeRules.push(`- 【${r.title}】：${r.content.trim()}`);
                     }
                 });
             }
 
-            // 2. 读取通用分类开启的词条（全局联动）
-            if (category !== 'general' && state.promptRules.general) {
-                state.promptRules.general.forEach(r => {
-                    if (r.enabled && r.content && r.content.trim()) {
-                        activeRules.push(`- 【通用-${r.title}】：${r.content.trim()}`);
-                    }
-                });
+            // 2. 处理通用分类（同理：通用是自定义就读自定义，是内置就读内置）
+            if (category !== 'general') {
+                const genMode = state.promptModes.general || 'builtin';
+                if (genMode === 'custom') {
+                    (state.customPrompts.general || []).forEach(r => {
+                        if (r.enabled && r.content && r.content.trim()) {
+                            activeRules.push(`- 【通用-${r.title}】：${r.content.trim()}`);
+                        }
+                    });
+                } else {
+                    (state.promptRules.general || []).forEach(r => {
+                        if (r.enabled && r.content && r.content.trim()) {
+                            activeRules.push(`- 【通用-${r.title}】：${r.content.trim()}`);
+                        }
+                    });
+                }
             }
 
             if (activeRules.length === 0) return '';
-            return `\n\n【极其重要的提示词规则约束与去八股规范（必须严格贯穿遵循）】：\n${activeRules.join('\n')}\n`;
+            return `\n\n【极其重要的提示词规则约束规范（必须严格贯穿遵循）】：\n${activeRules.join('\n')}\n`;
         }
 
         // 自动将自建模板挂载到 Char 生成器与 User 生成器中
