@@ -185,8 +185,81 @@
             text-decoration: line-through;
         }
 
-        /* ================= 角色卡预览列表 ================= */
-        .list-item { background-color: var(--bg-glass-heavy); backdrop-filter: blur(12px); border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 1.5px solid var(--border-glass); transition: border-color 0.2s, box-shadow 0.2s; position: relative; }
+        /* ================= 角色卡预览列表与 3D 翻转溯源 ================= */
+        .flip-card-container {
+            perspective: 1200px;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .flip-card-inner.is-flipped {
+            transform: rotateY(180deg);
+        }
+        .list-item { 
+            background-color: var(--bg-glass-heavy); 
+            backdrop-filter: blur(12px); 
+            border-radius: 16px; 
+            padding: 16px; 
+            border: 1.5px solid var(--border-glass); 
+            transition: border-color 0.2s, box-shadow 0.2s; 
+            position: relative; 
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        /* 翻转卡片背面（防雷同防抄袭溯源凭证） */
+        .list-item-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            transform: rotateY(180deg);
+            background-color: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            border: 1.5px solid rgba(0, 0, 0, 0.15);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            z-index: 10;
+        }
+        .proof-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #2e7d32;
+            background: rgba(46, 125, 50, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(46, 125, 50, 0.2);
+        }
+        .proof-content-box {
+            margin-top: 8px;
+            flex: 1;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px dashed var(--border-subtle);
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 11px;
+            line-height: 1.6;
+            color: var(--text-main);
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: monospace;
+        }
         .list-item.selected { border-color: var(--accent-danger) !important; }
         .list-item.selected::after { content: '✓'; position: absolute; top: 16px; right: 16px; width: 22px; height: 22px; background-color: var(--accent-danger); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; z-index: 5; }
         .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -2189,13 +2262,13 @@ age：年龄
     <div id="view-tutorial-guide" class="view-container">
         <div class="app-header">
             <button class="back-btn" onclick="backToDashboard()"><svg><path d="M15 19l-7-7 7-7"/></svg></button>
-            <span class="app-title">工坊全流程教程指南 (v2.1.9)</span>
+            <span class="app-title">工坊全流程教程指南 (v2.2.2)</span>
         </div>
         <div style="margin-top: 16px;">
             <div class="engine-card" style="padding: 14px; margin-bottom: 12px; border-left: 4px solid #222;">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">📖 耳机の生成工坊·全功能官方使用手册 (v2.1.9)</div>
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">📖 耳机の生成工坊·全功能官方使用手册 (v2.2.2)</div>
                 <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
-                    点击下方各个 App 卡片，即可展开查看每个应用的最新用法、生成技巧与联动逻辑！
+                    点击下方各个 App 卡片，即可展开查看每个应用的最新用法、防被鉴抄袭溯源凭证与联动逻辑！
                 </div>
             </div>
 
@@ -2275,13 +2348,13 @@ age：年龄
 
             <!-- 7 & 8. 预览管理 -->
             <details class="engine-card" style="outline: none; margin-bottom: 10px;">
-                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">7 & 8. char预览 & user预览 (数据管理中心)</summary>
+                <summary style="font-weight: bold; font-size: 13px; cursor: pointer; outline: none;">7 & 8. char预览 & user预览 (数据中心与防抄溯源凭证)</summary>
                 <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); line-height: 1.6; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
-                    <b>【功能概述】</b>：数据管理中心，具备自建分组、标签管理、单独/全量导出以及单份防拦截下载机制。<br>
-                    <b>【操作步骤】</b>：<br>
-                    ① 点击展开可查看该角色名下所有绑定的世界书、IF线与世界观数据；<br>
-                    ② 点击右上角「多选」或长按卡片进入批量模式，可批量移动分组、批量下载或删除；<br>
-                    ③ 顶部可切换优先导出格式为 <b>Word (.Docx)</b> 或 <b>纯文本 (.Txt)</b>。
+                    <b>【功能概述】</b>：数据管理中心，具备防被鉴雷同抄袭 3D 翻转卡片、自建分组、标签管理、全量导出与单份防拦截机制。<br>
+                    <b>【操作步骤与防被鉴抄袭溯源】</b>：<br>
+                    ① <b>🔄 3D 翻转查原案（防抄袭/雷同铁证）</b>：点击每张角色卡右上角「翻转查原案」，卡片将 3D 翻转至背面，顶部展示<b>「仿被鉴抄袭·原创原稿溯源凭证」</b>，内部完整记录了用户在生成前亲手输入的大纲、点选标签、时间戳，向下滑动还可查看名下绑定的全部 IF 线原稿、配套世界书原稿与世界观原稿，支持一键复制与截图以自证原创；<br>
+                    ② <b>配套数据展开</b>：点击正面展开可查看绑定的世界书、IF线与世界观生成结果；<br>
+                    ③ <b>批量多选与导出</b>：点击右上角「多选」或长按卡片进入批量管理，支持批量移动分组、多选下载；顶部可自由切换优先导出格式为 <b>Word (.Docx)</b> 或 <b>纯文本 (.Txt)</b>。
                 </div>
             </details>
 
@@ -2373,30 +2446,31 @@ age：年龄
     </div>
 
     <!-- 模态框合集 -->
-    <!-- 版本重大更新提示公告弹窗 -->
+    <!-- 版本重大更新提示公告弹窗 (v2.2.2 全新发布) -->
     <div class="modal-overlay" id="update-notice-modal" style="z-index: 4500;">
         <div class="modal-card" style="max-width: 440px; max-height: 85vh;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span style="font-size: 11px; font-weight: bold; color: #222; background: rgba(0,0,0,0.06); padding: 2px 8px; border-radius: 6px;">工坊重要更新日志</span>
-                <span style="font-size: 10px; color: var(--text-light);">版本 v2.1.9</span>
+                <span style="font-size: 11px; font-weight: bold; color: #2e7d32; background: rgba(46,125,50,0.1); padding: 2px 8px; border-radius: 6px;">工坊重要更新日志</span>
+                <span style="font-size: 10px; color: var(--text-light);">版本 v2.2.2</span>
             </div>
-            <h3 class="modal-title" style="margin-bottom: 12px; font-size: 16px;">✨ 耳机の生成工坊 v2.1.9 升级公告</h3>
+            <h3 class="modal-title" style="margin-bottom: 12px; font-size: 16px;">耳机の生成工坊 v2.2.2 升级公告</h3>
             <div class="modal-content-area" style="font-size: 12px; line-height: 1.7; color: var(--text-muted); white-space: pre-wrap; padding-right: 4px;">
-<b>🛠️ 【重点 Bug 修复】：</b>
-1. <b>修复多人选项自建模板未读取问题</b>：彻底清除了底层旧版冗余函数，恢复全模板解析引擎，自建模板在多人模式下 100% 精准识别并输出；
-2. <b>修复多人模式名字输入框重叠</b>：选项生成切换至多人模式时，自动隐藏多余的单人名字输入框，界面更加纯净统一；
-3. <b>修复提示词板块角标折行</b>：移除了 Emoji 并锁定文本在一行并列对齐显示。
+<b>【更新：全链路防雷同、被鉴抄·原创原稿溯源凭证系统】：</b>
+为了防止用户生成完后产生雷同撞车纠纷，或恶意抄袭将责任推诿给生成器，或者是产出被恶意鉴抄/雷同鉴抄，快速帮助uu自证，所以工坊正式上线全场景原稿留存与 3D 翻转查原案机制：
 
-<b>✨ 【重磅新增与功能优化】：</b>
-1. <b>全新【提示词】App 正式入驻第二页</b>：
-   · 划分为「人设提示词」、「开场白提示词」、「世界书提示词」、「通用提示词」四大独立分区；
-   · <b>内置与自定义双模式切换</b>：点击「切换为自定义提示词」后内置规范自动隐藏停用，展开专属空白输入区；
-   · <b>支持多条目无限追加与保存</b>：输入名称与规则保存后形成个人自建库，支持单独开关控制、一键加载到输入框微调或删除；
-   · <b>全链路自动拦截八股</b>：开启的规则在生成对应人设、开场白、世界书时会自动全链路注入大模型执行！
-2. <b>【工坊教程】App 同步收录最新指南</b>：新增提示词 App 详细图文用法解析。
+1. <b>角色卡 3D 拟态翻转查原案</b>：
+   · 每张角色卡右上角新增「翻转查原案」按键，点击即可丝滑 3D 翻转至背面；
+   · 背面永久保留生成前用户亲手填写的<b>原始大纲、点选标签、多人设定、补充要求与精确时间戳</b>，支持一键复制与截图自证原创！
+2. <b>IF线 / 世界书 / 世界观 原稿全量联动绑定</b>：
+   · 角色卡背面滑动即可查阅名下绑定的<b>全部 IF 线大纲、配套世界书（城市/地点/补充/关系网）及世界观原案快照</b>，形成闭环证据链；
+3. <b>三大独立仓库原稿全面覆盖</b>：
+   · 普通世界书、开场白剧情、文风库各卡片底部均配有<b>「展开查看生成前原稿大纲快照」</b>，随时证明构思源头。
+
+<b>📖 【工坊教程 App 同步更新】：</b>
+· 手册全面升级至 v2.2.2，新增防被鉴抄袭 3D 翻转卡片使用说明与原创溯源权益保护指南！
             </div>
             <div class="modal-footer" style="margin-top: 16px;">
-                <button class="btn btn-primary" style="width: 100%; padding: 12px;" onclick="closeUpdateNoticeModal()">我知道了，开始创作</button>
+                <button class="btn btn-primary" style="width: 100%; padding: 12px;" onclick="closeUpdateNoticeModal()">我知道了，开始体验全新防被鉴系统</button>
             </div>
         </div>
     </div>
@@ -2686,6 +2760,7 @@ Proactive & Non-proactive：
         var tempImportedAvatarStr = typeof tempImportedAvatarStr !== 'undefined' ? tempImportedAvatarStr : '';
         let hasLongPressed = false;
         let lastTouchTime = 0; // 物理阻止手机端模拟鼠标事件的二次重叠触发
+        let tempCharOriginDraft = null; // 记录生成前用户填写的原稿大纲快照
 
         const WATERMARK = "#此角色卡由耳机の角色卡生成工坊制作而来\n\n";
         // 新增：吻我涙专属水印与模板配置
@@ -3158,16 +3233,16 @@ Proactive & Non-proactive：
         let tempIfAvatarStr = ''; let tempIfCharText = ''; let tempIfCharId = null; let tempIfTag = '';
         let currentWvTab = 'normal'; let isWvNormalBound = true; let tempWvContentText = '';
 
-        // ==================== 更新日志弹窗控制器 (v2.1.9 专属新弹窗) ====================
+        // ==================== 更新日志弹窗控制器 (v2.2.2 专属全新弹窗) ====================
         function checkAndShowUpdateNotice() {
-            if (!state.update_v219_shown) {
+            if (!state.update_v222_shown) {
                 document.getElementById('update-notice-modal').style.display = 'flex';
             }
         }
 
         async function closeUpdateNoticeModal() {
             document.getElementById('update-notice-modal').style.display = 'none';
-            state.update_v219_shown = true;
+            state.update_v222_shown = true;
             await saveData();
         }
 
@@ -3947,6 +4022,27 @@ Proactive & Non-proactive：
             let startWatermark = templateInfo.startWatermark;
             let endWatermark = templateInfo.endWatermark;
 
+            // 记录生成前原稿快照（防雷同抄袭溯源凭证）
+            if (isMultiCharStandard) {
+                tempCharOriginDraft = {
+                    mode: '普通多人模式',
+                    groupName: document.getElementById('multi-char-group-name').value.trim() || "多人群像",
+                    members: multiStandardMembers.map(m => ({ name: m.name, direction: m.direction })),
+                    relations: document.getElementById('multi-char-relations-input').value.trim(),
+                    forbidden: document.getElementById('char-forbidden-direction')?.value.trim() || '无',
+                    createTime: new Date().toLocaleString()
+                };
+            } else {
+                tempCharOriginDraft = {
+                    mode: '普通单人模式',
+                    name: document.getElementById('char-name-input').value.trim() || "未命名",
+                    direction: document.getElementById('char-direction').value.trim(),
+                    visionAppearance: document.getElementById('avatar-appearance-text')?.value.trim() || '无',
+                    forbidden: document.getElementById('char-forbidden-direction')?.value.trim() || '无',
+                    createTime: new Date().toLocaleString()
+                };
+            }
+
             if (isMultiCharStandard) {
                 const groupName = document.getElementById('multi-char-group-name').value.trim() || "多人组合群像卡";
                 const rels = document.getElementById('multi-char-relations-input').value.trim();
@@ -4038,6 +4134,28 @@ ${activeTemplate}
             let activeTemplate = templateInfo.template;
             let startWatermark = templateInfo.startWatermark;
             let endWatermark = templateInfo.endWatermark;
+
+            // 记录选项模式原稿快照
+            if (isMultiCharOption) {
+                tempCharOriginDraft = {
+                    mode: '选项多人模式',
+                    groupName: document.getElementById('multi-char-option-group-name').value.trim() || "选项多人群像",
+                    members: multiOptionMembers.map(m => ({ name: m.name, tags: JSON.parse(JSON.stringify(m.tags)), direction: m.direction })),
+                    relations: document.getElementById('multi-option-relations-input').value.trim(),
+                    extraNotes: document.getElementById('char-option-direction').value.trim(),
+                    forbidden: document.getElementById('char-option-forbidden-direction')?.value.trim() || '无',
+                    createTime: new Date().toLocaleString()
+                };
+            } else {
+                tempCharOriginDraft = {
+                    mode: '选项单人模式',
+                    name: document.getElementById('char-option-name-input').value.trim() || "未命名",
+                    tags: JSON.parse(JSON.stringify(selectedTags)),
+                    supplementDirection: document.getElementById('char-option-direction').value.trim(),
+                    forbidden: document.getElementById('char-option-forbidden-direction')?.value.trim() || '无',
+                    createTime: new Date().toLocaleString()
+                };
+            }
 
             // 选项多人生成分支
             if (isMultiCharOption) {
@@ -4216,6 +4334,7 @@ ${activeTemplate}
                     relationsText: relationsText,
                     avatar: validMembers[0]?.avatar || '',
                     content: fullText,
+                    originDraft: tempCharOriginDraft,
                     worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
                     ifLines: [],
                     folder: '首页',
@@ -4228,6 +4347,7 @@ ${activeTemplate}
                     avatar: state.tempAvatarStr, 
                     isMulti: false,
                     content: fullText, 
+                    originDraft: tempCharOriginDraft,
                     worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] }, 
                     ifLines: [], 
                     folder: '首页', 
@@ -4402,9 +4522,18 @@ ${activeTemplate}
         function showImportedWarningModal() { document.getElementById('imported-warning-modal').style.display = 'flex'; }
         function closeImportedWarningModal() { document.getElementById('imported-warning-modal').style.display = 'none'; }
 
+        let tempWbOriginDraft = null; // 记录配套世界书原稿
         function generateIndependentWB(type) {
             const charId = document.getElementById('wb-char-select').value; if (!charId) return alert("请选择角色！");
             const card = state.cards.find(c => c.id == charId); const streamMode = document.querySelector('input[name="wb_stream_mode"]:checked').value === 'stream';
+            
+            tempWbOriginDraft = {
+                type: type,
+                boundCharName: card.name,
+                direction: document.getElementById('wb-direction').value.trim() || '大纲留空自由发挥',
+                otherName: type === 'other' ? (document.getElementById('other-wb-name-input').value.trim() || '自定世界书') : '',
+                createTime: new Date().toLocaleString()
+            };
             if (type !== 'other') document.getElementById('other-wb-input-card').style.display = 'none';
             let sysPrompt = `你是一个优秀的配景撰写师。参考以下角色卡进行扩展：\n${card.content}\n\n【核心要求】：\n必须严格保留排版结构和英文字段，不要解释和闲聊，替换占位符进行详尽描写。`;
             if (type === 'city') sysPrompt += `\n\n以该模板输出城市：\n${TEMPLATE_CITY}`; else if (type === 'workplace') sysPrompt += `\n\n以该模板输出地点：\n${TEMPLATE_WORKPLACE}`; else if (type === 'supplement') sysPrompt += `\n\n以该模板输出补充：\n${TEMPLATE_SUPPLEMENT}`; else if (type === 'relation') sysPrompt += `\n\n以该模板产出3位关系人：\n${TEMPLATE_RELATION.replace('{{char名字}}', card.name)}`; else if (type === 'other') { const customWbName = document.getElementById('other-wb-name-input').value.trim() || "自定世界书"; sysPrompt += `\n\n请以此模板产出：\n#${customWbName}：\n【${customWbName} background supplement】\n       Dress_details/Background_info：\n            －写详细背景等。\n       manner_attitude/Rules：\n            －写相关规则等。`; }
@@ -4426,7 +4555,31 @@ ${activeTemplate}
             callTextAPI(state.tApiUrl, state.tApiKey, state.tApiModel, sysPrompt, [{role:"user", content: `[已写内容]：\n${base}\n\n【无缝继续向下输出】：`}], true, (txt) => { sb.innerText = WB_WATERMARK + base + txt; }, (fin) => { const complete = WB_WATERMARK + base + fin + "\n\n……end*"; sb.innerText = complete; tempWbText = complete; document.getElementById('post-wb-retry-row').style.display = 'flex'; document.getElementById('post-wb-action-row').style.display = 'flex'; }, (err) => { sb.innerText = "中断: " + err; }, state.tApiProxy);
         }
         function regenerateIndependentWB() { document.getElementById('wb-stream-box').innerText = ''; generateIndependentWB(tempWbType); }
-        async function saveWBWithoutEdit() { const card = state.cards.find(c => c.id == tempWbCardId); if (!card) return; if (!card.worldbooks) card.worldbooks = { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] }; if (tempWbType === 'city') card.worldbooks.city = tempWbText; else if (tempWbType === 'workplace') card.worldbooks.workplace = tempWbText; else if (tempWbType === 'supplement') card.worldbooks.supplements.push(tempWbText); else if (tempWbType === 'relation') card.worldbooks.relations.push(tempWbText); else if (tempWbType === 'other') card.worldbooks.others.push(tempWbText); await saveData(); alert("已写入本地！"); document.getElementById('post-wb-retry-row').style.display = 'none'; document.getElementById('post-wb-action-row').style.display = 'none'; renderCardList(document.querySelector('#card-folders .folder-tag.active')?.innerText || '首页'); }
+        async function saveWBWithoutEdit() { 
+            const card = state.cards.find(c => c.id == tempWbCardId); 
+            if (!card) return; 
+            if (!card.worldbooks) card.worldbooks = { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [], originDrafts: {} }; 
+            if (!card.worldbooks.originDrafts) card.worldbooks.originDrafts = {};
+
+            if (tempWbType === 'city') {
+                card.worldbooks.city = tempWbText;
+                card.worldbooks.originDrafts.city = tempWbOriginDraft;
+            } else if (tempWbType === 'workplace') {
+                card.worldbooks.workplace = tempWbText;
+                card.worldbooks.originDrafts.workplace = tempWbOriginDraft;
+            } else if (tempWbType === 'supplement') {
+                card.worldbooks.supplements.push({ content: tempWbText, originDraft: tempWbOriginDraft });
+            } else if (tempWbType === 'relation') {
+                card.worldbooks.relations.push({ content: tempWbText, originDraft: tempWbOriginDraft });
+            } else if (tempWbType === 'other') {
+                card.worldbooks.others.push({ content: tempWbText, originDraft: tempWbOriginDraft });
+            } 
+            await saveData(); 
+            alert("配套世界书已保存！原稿凭证已自动绑定至该角色卡。"); 
+            document.getElementById('post-wb-retry-row').style.display = 'none'; 
+            document.getElementById('post-wb-action-row').style.display = 'none'; 
+            renderCardList(document.querySelector('#card-folders .folder-tag.active')?.innerText || '首页'); 
+        }
         function enterWBEditMode() { document.getElementById('wb-stream-box').style.display = 'none'; document.getElementById('post-wb-retry-row').style.display = 'none'; document.getElementById('post-wb-action-row').style.display = 'none'; document.getElementById('wb-edit-textarea').value = tempWbText; document.getElementById('post-wb-edit-panel').style.display = 'block'; }
         async function saveWBWithEdit() { const card = state.cards.find(c => c.id == tempWbCardId); if (!card) return; const val = document.getElementById('wb-edit-textarea').value; if (!card.worldbooks) card.worldbooks = { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] }; if (tempWbType === 'city') card.worldbooks.city = val; else if (tempWbType === 'workplace') card.worldbooks.workplace = val; else if (tempWbType === 'supplement') card.worldbooks.supplements.push(val); else if (tempWbType === 'relation') card.worldbooks.relations.push(val); else if (tempWbType === 'other') card.worldbooks.others.push(val); tempWbText = val; await saveData(); const sb = document.getElementById('wb-stream-box'); sb.innerText = val; sb.style.display = 'block'; alert("已修改保存！"); document.getElementById('post-wb-edit-panel').style.display = 'none'; renderCardList(document.querySelector('#card-folders .folder-tag.active')?.innerText || '首页'); }
 
@@ -4434,36 +4587,51 @@ ${activeTemplate}
         function selCardFolder(el, name) { cancelCardBatchMode(); document.querySelectorAll('#card-folders .folder-tag').forEach(t => t.classList.remove('active')); el.classList.add('active'); renderCardList(name); }
         function addCardFolder() { const n = prompt("输入分组名称:"); if (n && !state.cardFolders.includes(n)) { if (n === '导入的角色卡') return alert("不可使用保留词汇"); state.cardFolders.push(n); saveData(); renderCardFolders(); } }
         function renderCardList(folderName = '首页') {
-            const container = document.getElementById('card-list-container'); if (!container) return; const list = folderName === '首页' ? state.cards : state.cards.filter(c => c.folder === folderName); container.innerHTML = '';
+            const container = document.getElementById('card-list-container'); 
+            if (!container) return; 
+            const list = folderName === '首页' ? state.cards : state.cards.filter(c => c.folder === folderName); 
+            container.innerHTML = '';
+
             list.forEach(card => {
-                const isSelected = selectedCardIds.includes(card.id); const item = document.createElement('div'); item.className = 'list-item' + (isSelected ? ' selected' : '');
-                if (!card.worldbooks) card.worldbooks = { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] }; if (!card.ifLines) card.ifLines = []; if (!card.worldbooks.normal) card.worldbooks.normal = []; if (!card.worldbooks.ifWorldviews) card.worldbooks.ifWorldviews = [];
-                item.addEventListener('touchstart', () => cardPressStart(card.id, true)); 
-                item.addEventListener('touchend', (e) => cardPressEnd(e, true)); 
-                item.addEventListener('touchcancel', (e) => cardPressEnd(e, true));
-                item.addEventListener('mousedown', () => cardPressStart(card.id, false)); 
-                item.addEventListener('mouseup', (e) => cardPressEnd(e, false));
-                item.addEventListener('contextmenu', (e) => e.preventDefault());
+                const isSelected = selectedCardIds.includes(card.id);
+                const flipWrapper = document.createElement('div');
+                flipWrapper.className = 'flip-card-container';
+                flipWrapper.id = `flip-wrapper-${card.id}`;
+
+                const flipInner = document.createElement('div');
+                flipInner.className = 'flip-card-inner';
+                flipInner.id = `flip-inner-${card.id}`;
+
+                if (!card.worldbooks) card.worldbooks = { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] }; 
+                if (!card.ifLines) card.ifLines = []; 
+                if (!card.worldbooks.normal) card.worldbooks.normal = []; 
+                if (!card.worldbooks.ifWorldviews) card.worldbooks.ifWorldviews = [];
+
+                // ================= 正面卡片 DOM =================
+                const frontCard = document.createElement('div');
+                frontCard.className = 'list-item' + (isSelected ? ' selected' : '');
+
+                frontCard.addEventListener('touchstart', () => cardPressStart(card.id, true)); 
+                frontCard.addEventListener('touchend', (e) => cardPressEnd(e, true)); 
+                frontCard.addEventListener('touchcancel', (e) => cardPressEnd(e, true));
+                frontCard.addEventListener('mousedown', () => cardPressStart(card.id, false)); 
+                frontCard.addEventListener('mouseup', (e) => cardPressEnd(e, false));
+                frontCard.addEventListener('contextmenu', (e) => e.preventDefault());
+                
                 let lastTap = 0;
-                item.addEventListener('click', (e) => {
+                frontCard.addEventListener('click', (e) => {
                     const now = Date.now();
                     if (now - lastTap < 300) {
-                        // 双Tap判定 -> 触发/合并进入多选管理
-                        if (!isCardBatchMode) {
-                            enterCardBatchMode(card.id);
-                        } else {
-                            toggleSelectCard(card.id);
-                        }
+                        if (!isCardBatchMode) enterCardBatchMode(card.id);
+                        else toggleSelectCard(card.id);
                         e.preventDefault();
                         e.stopPropagation();
                     } else {
-                        // 单Tap判定 -> 已进入多选时辅助打勾点选
-                        if (isCardBatchMode) {
-                            toggleSelectCard(card.id);
-                        }
+                        if (isCardBatchMode) toggleSelectCard(card.id);
                     }
                     lastTap = now;
                 });
+
                 let isMulti = card.isMulti || (card.tags && card.tags.includes('多人卡'));
                 let multiMembersHtml = '';
                 let multiExportsHtml = '';
@@ -4478,7 +4646,6 @@ ${activeTemplate}
                         `).join('')}
                     </div>`;
 
-                    // 每个子角色的独立导出按键
                     multiExportsHtml = card.members.map(m => 
                         `<button class="btn-small" onclick="event.stopPropagation(); exportSingleSubCharOfMulti(${card.id}, '${m.name.replace(/'/g, "\\'")}')">导出: ${m.name}</button>`
                     ).join('');
@@ -4499,22 +4666,160 @@ ${activeTemplate}
                 </div>`;
 
                 let tagsHtml = (card.tags || []).map(t => `<span style="font-size:10px; font-weight:bold; color:var(--accent-danger); margin-right:6px;">#${t}</span>`).join('');
-                item.innerHTML = `<div class="list-header"><div style="display:flex; align-items:center; gap:10px; width:100%;">${card.avatar ? `<img src="${card.avatar}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">` : ''}<div style="flex:1;"><div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">${isMulti ? '<span class="tag-badge-multi">#多人卡</span>' : ''}<span style="font-size:15px; font-weight:bold;">${card.name}</span>${tagsHtml}<button class="btn-small" style="padding:2px 6px; font-size:9px;" onclick="event.stopPropagation(); manageCardTags(${card.id})">+标签</button></div><span style="font-size:9px; color:var(--text-light); background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:4px; display:inline-block; margin-top:4px;">${card.folder || '首页'}</span></div></div></div>${multiMembersHtml}<div class="list-desc">${card.content.substring(0, 50)}...</div>
-                <details style="font-size:12px; color:var(--text-muted); margin-bottom:8px;" ${isCardBatchMode ? 'disabled' : ''} onclick="event.stopPropagation();">
-                    <summary style="outline:none; cursor:pointer; margin-bottom:8px; font-weight:500;">展开查看配套数据与世界书</summary>
-                    <div style="padding-left:12px; display:flex; flex-direction:column; gap:4px; border-left:2px solid var(--border-subtle);">
-                        ${isMulti ? `<div>包含成员: ${card.members.map(m=>m.name).join('、')}</div>` : ''}
-                        <div>城市设定: ${card.worldbooks.city ? '已生成' : '无'}</div>
-                        <div>工作地点: ${card.worldbooks.workplace ? '已生成' : '无'}</div>
-                        <div>人设补充: ${card.worldbooks.supplements.length} 份</div>
-                        <div>关系网: ${card.worldbooks.relations.length} 份</div>
-                        ${card.worldbooks.others.length ? `<div>其他设定: ${card.worldbooks.others.length} 份</div>` : ''}
-                        <div style="margin-top:6px; font-weight:bold; color:#222;">if人设生成: ${card.ifLines.length} 份</div>
-                        <div style="font-weight:bold; color:#222;">普通世界观: ${card.worldbooks.normal.length} 份</div>
-                        <div style="font-weight:bold; color:#222;">if线世界观: ${card.worldbooks.ifWorldviews.length} 份</div>
+                
+                frontCard.innerHTML = `
+                    <div class="list-header">
+                        <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                            ${card.avatar ? `<img src="${card.avatar}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">` : ''}
+                            <div style="flex:1;">
+                                <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                        ${isMulti ? '<span class="tag-badge-multi">#多人卡</span>' : ''}
+                                        <span style="font-size:15px; font-weight:bold;">${card.name}</span>
+                                        ${tagsHtml}
+                                        <button class="btn-small" style="padding:2px 6px; font-size:9px;" onclick="event.stopPropagation(); manageCardTags(${card.id})">+标签</button>
+                                    </div>
+                                    <!-- 卡片正面右上角翻转按键 -->
+                                    <button class="btn-small" onclick="event.stopPropagation(); toggleFlipCard(${card.id})" style="background:rgba(0,0,0,0.06); border:1px solid var(--border-subtle); padding:3px 8px; font-size:10px; font-weight:bold; display:flex; align-items:center; gap:3px; flex-shrink:0;">
+                                         翻转查原案
+                                    </button>
+                                </div>
+                                <span style="font-size:9px; color:var(--text-light); background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:4px; display:inline-block; margin-top:4px;">${card.folder || '首页'}</span>
+                            </div>
+                        </div>
                     </div>
-                </details>${isCardBatchMode ? '' : wbHtml}`;
-                container.appendChild(item);
+                    ${multiMembersHtml}
+                    <div class="list-desc">${card.content.substring(0, 50)}...</div>
+                    <details style="font-size:12px; color:var(--text-muted); margin-bottom:8px;" ${isCardBatchMode ? 'disabled' : ''} onclick="event.stopPropagation();">
+                        <summary style="outline:none; cursor:pointer; margin-bottom:8px; font-weight:500;">展开查看配套数据与世界书</summary>
+                        <div style="padding-left:12px; display:flex; flex-direction:column; gap:4px; border-left:2px solid var(--border-subtle);">
+                            ${isMulti ? `<div>包含成员: ${card.members.map(m=>m.name).join('、')}</div>` : ''}
+                            <div>城市设定: ${card.worldbooks.city ? '已生成' : '无'}</div>
+                            <div>工作地点: ${card.worldbooks.workplace ? '已生成' : '无'}</div>
+                            <div>人设补充: ${card.worldbooks.supplements.length} 份</div>
+                            <div>关系网: ${card.worldbooks.relations.length} 份</div>
+                            ${card.worldbooks.others.length ? `<div>其他设定: ${card.worldbooks.others.length} 份</div>` : ''}
+                            <div style="margin-top:6px; font-weight:bold; color:#222;">if人设生成: ${card.ifLines.length} 份</div>
+                            <div style="font-weight:bold; color:#222;">普通世界观: ${card.worldbooks.normal.length} 份</div>
+                            <div style="font-weight:bold; color:#222;">if线世界观: ${card.worldbooks.ifWorldviews.length} 份</div>
+                        </div>
+                    </details>
+                    ${isCardBatchMode ? '' : wbHtml}
+                `;
+
+                // ================= 背面卡片 DOM（防抄袭与防雷同溯源） =================
+                const backCard = document.createElement('div');
+                backCard.className = 'list-item-back';
+
+                // 编译原稿展示文本
+                let originText = "";
+                if (card.originDraft) {
+                    const d = card.originDraft;
+                    originText += `【创作模式】：${d.mode || '标准生成'}\n`;
+                    originText += `【保存记录时间】：${d.createTime || '无记录'}\n`;
+                    originText += `【角色名称】：${d.name || d.groupName || card.name}\n\n`;
+
+                    if (d.direction) originText += `【手写核心大纲/背景】：\n${d.direction}\n\n`;
+                    if (d.tags) originText += `【点选标签参数】：\n${JSON.stringify(d.tags, null, 2)}\n\n`;
+                    if (d.supplementDirection) originText += `【补充搭配方向】：\n${d.supplementDirection}\n\n`;
+                    if (d.members && d.members.length > 0) {
+                        originText += `【多人组合各成员原案】：\n`;
+                        d.members.forEach((m, idx) => {
+                            originText += `  ${idx+1}. 【${m.name}】：${m.direction || JSON.stringify(m.tags) || '无'}\n`;
+                        });
+                        originText += `\n`;
+                    }
+                    if (d.relations) originText += `【关系网设定要求】：\n${d.relations}\n\n`;
+                    if (d.extraNotes) originText += `【全员补充大纲】：\n${d.extraNotes}\n\n`;
+                    if (d.visionAppearance && d.visionAppearance !== '无') originText += `【AI识图外貌输入】：\n${d.visionAppearance}\n\n`;
+                    if (d.forbidden && d.forbidden !== '无') originText += `【禁止输出方向】：\n${d.forbidden}\n\n`;
+                } else {
+                    originText = `【此角色卡为早前版本生成或外部导入，原稿大纲快照未完整留存】\n\n【角色主内容预览】：\n${card.content.substring(0, 300)}...`;
+                }
+
+                // 挂载名下所有绑定的 IF 线原稿、配套世界书原稿与世界观原稿
+                originText += `\n================================\n【名下 IF 线人设原稿快照】：\n`;
+                if (card.ifLines && card.ifLines.length > 0) {
+                    card.ifLines.forEach((il, i) => {
+                        originText += `\n[IF线 ${i+1}] 标签：#${il.tag}\n`;
+                        if (il.originDraft) {
+                            originText += `  - 生成前手填大纲：${il.originDraft.direction || '无'}\n`;
+                            originText += `  - 记录时间：${il.originDraft.createTime || '无'}\n`;
+                        } else {
+                            originText += `  - 内容概要：${(il.content || '').substring(0, 80)}...\n`;
+                        }
+                    });
+                } else {
+                    originText += `（暂无 IF 线人设数据）\n`;
+                }
+
+                originText += `\n================================\n【名下配套世界书原稿快照】：\n`;
+                if (card.worldbooks && card.worldbooks.originDrafts) {
+                    const od = card.worldbooks.originDrafts;
+                    if (od.city) originText += `· [城市原稿]：${od.city.direction || '已生成'}\n`;
+                    if (od.workplace) originText += `· [地点原稿]：${od.workplace.direction || '已生成'}\n`;
+                }
+                if (card.worldbooks && card.worldbooks.supplements && card.worldbooks.supplements.length > 0) {
+                    card.worldbooks.supplements.forEach((s, idx) => {
+                        if (typeof s === 'object' && s.originDraft) originText += `· [人设补充 ${idx+1} 原稿]：${s.originDraft.direction || '无'}\n`;
+                    });
+                }
+                if (card.worldbooks && card.worldbooks.relations && card.worldbooks.relations.length > 0) {
+                    card.worldbooks.relations.forEach((r, idx) => {
+                        if (typeof r === 'object' && r.originDraft) originText += `· [关系网 ${idx+1} 原稿]：${r.originDraft.direction || '无'}\n`;
+                    });
+                }
+
+                originText += `\n================================\n【名下世界观原稿快照】：\n`;
+                if (card.worldbooks && card.worldbooks.normal && card.worldbooks.normal.length > 0) {
+                    card.worldbooks.normal.forEach((nw, i) => {
+                        if (typeof nw === 'object' && nw.originDraft) originText += `· [普通世界观 ${i+1} 原稿]：${nw.originDraft.direction || '无'}\n`;
+                    });
+                }
+                if (card.worldbooks && card.worldbooks.ifWorldviews && card.worldbooks.ifWorldviews.length > 0) {
+                    card.worldbooks.ifWorldviews.forEach((iw, i) => {
+                        if (typeof iw === 'object' && iw.originDraft) originText += `· [IF线世界观(#${iw.tag}) 原稿]：${iw.originDraft.direction || '无'}\n`;
+                    });
+                }
+
+                backCard.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding-bottom:8px;">
+                        <span class="proof-badge"> 防被鉴抄·原创原稿溯源凭证</span>
+                        <button class="btn-small" onclick="event.stopPropagation(); toggleFlipCard(${card.id})" style="background:#222; color:#fff; padding:3px 10px; font-size:10px; font-weight:bold;">
+                            ↩ 翻回正面
+                        </button>
+                    </div>
+                    <div class="proof-content-box">${originText}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                        <span style="font-size:10px; color:var(--text-light);">可出示此原案截图证明原创构思</span>
+                        <button class="btn-small" onclick="event.stopPropagation(); copyOriginDraftText(${card.id})" style="padding:4px 8px; font-size:10px;">复制原稿文本</button>
+                    </div>
+                `;
+
+                flipInner.appendChild(frontCard);
+                flipInner.appendChild(backCard);
+                flipWrapper.appendChild(flipInner);
+                container.appendChild(flipWrapper);
+            });
+        }
+
+        // 卡片 3D 翻转切换控制函数
+        function toggleFlipCard(cardId) {
+            const inner = document.getElementById(`flip-inner-${cardId}`);
+            if (inner) {
+                inner.classList.toggle('is-flipped');
+            }
+        }
+
+        // 复制原稿文本函数
+        function copyOriginDraftText(cardId) {
+            const card = state.cards.find(c => c.id == cardId);
+            if (!card) return;
+            const draft = card.originDraft ? JSON.stringify(card.originDraft, null, 2) : card.content;
+            navigator.clipboard.writeText(draft).then(() => {
+                alert("📋 原稿大纲与参数已成功复制到剪贴板！");
+            }).catch(() => {
+                alert("复制成功！");
             });
         }
         let cardPressTimer; 
@@ -5321,11 +5626,21 @@ async function deleteActiveModalImage() {
         function updateIfCharSelect() { const sel = document.getElementById('if-bound-char-select'); sel.innerHTML = state.cards.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); if (state.cards.length === 0) sel.innerHTML = `<option value="">(无现有char人设卡)</option>`; }
         function toggleIfJailbreakUI() { document.getElementById('if-jailbreak-ui-panel').style.display = document.getElementById('if-jailbreak-cb').checked ? 'block' : 'none'; }
         async function saveIfJailbreakPrompt() { state.jailbreakPrompt = document.getElementById('if-jailbreak-prompt-textarea').value; await saveData(); alert("if破限词已保存！"); }
+        let tempIfOriginDraft = null; // 记录 IF 线原稿
         function generateIfChar() {
             const charId = document.getElementById('if-bound-char-select').value; if (!charId) return alert("请选择关联的角色卡！");
             tempIfCharId = charId; tempIfTag = document.getElementById('if-tag-input').value.trim(); if (!tempIfTag) return alert("请输入if线主标签！");
             const dir = document.getElementById('if-direction').value.trim(); if (!dir) return alert("请填写if线大纲！");
             const card = state.cards.find(c => c.id == charId);
+
+            // 记录 IF 线生成前原稿快照
+            tempIfOriginDraft = {
+                tag: tempIfTag,
+                boundCharName: card.name,
+                direction: dir,
+                createTime: new Date().toLocaleString()
+            };
+
             let sysPrompt = `你是一个专业的if线（平行宇宙/假设线）人设生成器。\n用户希望基于原角色卡生成一份if线的反转/平行设定。\n【原角色设定】：\n${card.content}\n\n请完全依据以下同样的角色模板骨架排版输出if线内容：\n\n${getCharTemplate(false)}`;
             let userContent = ""; if (document.getElementById('if-jailbreak-cb').checked) userContent += `[破限指令]：\n${document.getElementById('if-jailbreak-prompt-textarea').value}\n\n`; userContent += `[if线标签]：${tempIfTag}\n[if线大纲]：${dir}`;
             const sb = document.getElementById('if-stream-box'); sb.style.display = 'block'; sb.innerText = "正在推演if线人设..."; document.getElementById('post-if-retry-row').style.display = 'none'; document.getElementById('post-if-action-row').style.display = 'none'; document.getElementById('wv-if-cascade-card').style.display = 'none';
@@ -5344,7 +5659,21 @@ async function deleteActiveModalImage() {
             callTextAPI(state.tApiUrl, state.tApiKey, state.tApiModel, sysPrompt, [{role:"user", content: `[已有内容]：\n${base}\n\n【无缝继续向下输出】：`}], true, (txt) => { sb.innerText = IF_WATERMARK + base + txt; }, (fin) => { sb.innerText = IF_WATERMARK + base + fin; tempIfCharText = IF_WATERMARK + base + fin; document.getElementById('post-if-retry-row').style.display = 'flex'; document.getElementById('post-if-action-row').style.display = 'flex'; }, (err) => { sb.innerText = "中断: " + err; }, state.tApiProxy);
         }
         function regenerateIfChar() { document.getElementById('if-stream-box').innerText = ''; generateIfChar(); }
-        async function executeIfCharSave(content) { const card = state.cards.find(c => c.id == tempIfCharId); if (!card) return; if (!card.ifLines) card.ifLines = []; card.ifLines.push({ tag: tempIfTag, avatar: tempIfAvatarStr, content: content }); await saveData(); document.getElementById('post-if-action-row').style.display = 'none'; document.getElementById('post-if-edit-panel').style.display = 'none'; document.getElementById('if-save-modal').style.display = 'flex'; }
+        async function executeIfCharSave(content) { 
+            const card = state.cards.find(c => c.id == tempIfCharId); 
+            if (!card) return; 
+            if (!card.ifLines) card.ifLines = []; 
+            card.ifLines.push({ 
+                tag: tempIfTag, 
+                avatar: tempIfAvatarStr, 
+                content: content, 
+                originDraft: tempIfOriginDraft 
+            }); 
+            await saveData(); 
+            document.getElementById('post-if-action-row').style.display = 'none'; 
+            document.getElementById('post-if-edit-panel').style.display = 'none'; 
+            document.getElementById('if-save-modal').style.display = 'flex'; 
+        }
         function saveIfCharWithoutEdit() { executeIfCharSave(tempIfCharText); }
         function enterIfCharEditMode() { document.getElementById('if-stream-box').style.display = 'none'; document.getElementById('post-if-action-row').style.display = 'none'; document.getElementById('post-if-retry-row').style.display = 'none'; document.getElementById('if-edit-textarea').value = tempIfCharText; document.getElementById('post-if-edit-panel').style.display = 'block'; }
         function saveIfCharWithEdit() { executeIfCharSave(document.getElementById('if-edit-textarea').value); }
@@ -5373,8 +5702,16 @@ async function deleteActiveModalImage() {
         function toggleWvGenJailbreakUI() { document.getElementById('wv-gen-jailbreak-ui').style.display = document.getElementById('wv-gen-jailbreak-cb').checked ? 'block' : 'none'; }
         async function saveWvGenJailbreakPrompt() { await saveData(); alert("已保存"); }
 
+        let tempWvOriginDraft = null; // 记录世界观原稿
         function generateWvContent() {
             const dir = document.getElementById('wv-gen-direction').value.trim(); if (!dir) return alert("请填写世界大纲！");
+            
+            tempWvOriginDraft = {
+                tab: currentWvTab,
+                direction: dir,
+                createTime: new Date().toLocaleString()
+            };
+
             let sysPrompt = "你是一个专业的世界观构建师。"; let userContent = ""; let cardId = null;
             if (currentWvTab === 'normal') { if (isWvNormalBound) { cardId = document.getElementById('wv-normal-char-select').value; const card = state.cards.find(c => c.id == cardId); if (card) sysPrompt += `\n请参考以下主角的设定信息融入世界观撰写：\n【角色设定】：\n${card.content}`; } } else {
                 cardId = document.getElementById('wv-if-char-select').value; const tagIdx = document.getElementById('wv-if-tag-select').value;
@@ -5425,8 +5762,8 @@ async function deleteActiveModalImage() {
             if (!targetCard.worldbooks.normal) targetCard.worldbooks.normal = []; 
             if (!targetCard.worldbooks.ifWorldviews) targetCard.worldbooks.ifWorldviews = [];
 
-            if (currentWvTab === 'normal') targetCard.worldbooks.normal.push(content); 
-            else targetCard.worldbooks.ifWorldviews.push({ tag: tempIfTag, content: content });
+            if (currentWvTab === 'normal') targetCard.worldbooks.normal.push({ content: content, originDraft: tempWvOriginDraft }); 
+            else targetCard.worldbooks.ifWorldviews.push({ tag: tempIfTag, content: content, originDraft: tempWvOriginDraft });
             
             await saveData();
             document.getElementById('post-wv-gen-action-row').style.display = 'none'; document.getElementById('post-wv-gen-edit-panel').style.display = 'none';
@@ -5456,10 +5793,17 @@ async function deleteActiveModalImage() {
         }
 
         // 2. 生成、续写、重新生成与保存动作 (同Char/Worldview 一致的逻辑)
+        let tempWbgOriginDraft = null; // 记录普通世界书原稿
         function generateGeneralWB() {
             const title = document.getElementById('wbg-title-input').value.trim() || "未命名设定";
             const dir = document.getElementById('wbg-direction').value.trim();
             if (!dir) return alert("请填写普通世界书大纲！");
+
+            tempWbgOriginDraft = {
+                title: title,
+                direction: dir,
+                createTime: new Date().toLocaleString()
+            };
             
             const stream = document.querySelector('input[name="wbg_stream_mode"]:checked').value === 'stream';
             let sysPrompt = "你是一个优秀的幻想题材/场景世界设定撰写师。根据用户大纲定制一份逻辑极佳、毫无废话的世界设定大纲文件。直接输出，请不要客套和闲聊。";
@@ -5541,6 +5885,7 @@ async function deleteActiveModalImage() {
                 id: Date.now(),
                 title: title,
                 content: tempWbgText,
+                originDraft: tempWbgOriginDraft,
                 folder: '首页'
             });
             await saveData();
@@ -5622,6 +5967,11 @@ async function deleteActiveModalImage() {
                         <span style="font-size:9px; color:var(--text-light); margin-left:auto; background:rgba(0,0,0,0.04); padding:2px 6px; border-radius:4px;">${item.folder}</span>
                     </div>
                     <div style="font-size:12px; color:var(--text-muted); margin-top:6px; white-space:pre-wrap; max-height:120px; overflow-y:auto; border-top: 1px dashed rgba(0,0,0,0.05); padding-top:6px; font-family:monospace;">${item.content}</div>
+                    ${item.originDraft ? `
+                    <details style="margin-top:6px; font-size:11px; background:rgba(0,0,0,0.02); padding:6px; border-radius:6px;">
+                        <summary style="cursor:pointer; color:#2e7d32; font-weight:bold;"> 展开查看生成前原稿大纲快照</summary>
+                        <div style="margin-top:4px; white-space:pre-wrap; color:var(--text-main); font-family:monospace;">【原始设定大纲】：\n${item.originDraft.direction || '无'}\n【记录时间】：${item.originDraft.createTime || ''}</div>
+                    </details>` : ''}
                     <div style="display:flex; gap:6px; margin-top:8px; justify-content:flex-end; align-items:center;">
                         <select onchange="moveGeneralWb(${item.id}, this.value)" style="padding:2px 4px; font-size:11px; border-radius:4px; border:1px solid #ccc; background:#fff; height:24px;"><option value="">分组移动至...</option>${state.wbFolders.map(f=>`<option value="${f}">${f}</option>`).join('')}</select>
                         <button onclick="downloadSingleGeneralWb(${item.id}, 'docx')" class="btn-small">Docx</button>
@@ -6165,10 +6515,16 @@ ${getCharTemplate(true)}`;
 
         async function saveWritingStyleDirect() {
             if (!state.writingStyles) state.writingStyles = [];
+            const rawDir = document.getElementById('style-gen-direction').value.trim();
             state.writingStyles.unshift({
                 id: Date.now(),
                 title: tempStyleTitle || "自建文风",
                 content: tempWritingStyleText,
+                originDraft: {
+                    title: tempStyleTitle,
+                    direction: rawDir || '无参考范文，自由发挥',
+                    createTime: new Date().toLocaleString()
+                },
                 folder: '首页'
             });
             await saveData();
@@ -6217,6 +6573,11 @@ ${getCharTemplate(true)}`;
                 <div class="list-item" style="margin-bottom:8px; border:1px solid #ddd; padding:10px; border-radius:10px;">
                     <div style="font-weight:bold; font-size:13px; color:#222; margin-bottom:4px;"># ${s.title}</div>
                     <div style="font-size:12px; color:var(--text-muted); max-height:80px; overflow-y:auto; white-space:pre-wrap; font-family:monospace;">${s.content}</div>
+                    ${s.originDraft ? `
+                    <details style="margin-top:6px; font-size:11px; background:rgba(0,0,0,0.02); padding:6px; border-radius:6px;">
+                        <summary style="cursor:pointer; color:#2e7d32; font-weight:bold;">查看生成前文风特征大纲</summary>
+                        <div style="margin-top:4px; white-space:pre-wrap; color:var(--text-main); font-family:monospace;">【原始输入要求】：\n${s.originDraft.direction || '无'}\n【记录时间】：${s.originDraft.createTime || ''}</div>
+                    </details>` : ''}
                     <div style="display:flex; gap:6px; margin-top:8px; justify-content:flex-end;">
                         <button class="btn-small" onclick="executeWbFileConversionAndDownload('${s.content.replace(/'/g, "\\'")}', '${s.title}_文风', 'docx')">Docx</button>
                         <button class="btn-small" onclick="executeWbFileConversionAndDownload('${s.content.replace(/'/g, "\\'")}', '${s.title}_文风', 'txt')">Txt</button>
@@ -7048,12 +7409,20 @@ ${getCharTemplate(true)}`;
         }
 
         async function saveGreetingWithoutEdit() {
+            const rawOutline = document.getElementById('gtg-direction').value.trim();
+            const styleText = document.getElementById('gtg-style-text')?.value.trim() || '无';
             state.generalWbs.unshift({
                 id: Date.now(),
                 charName: tempGtgBoundCharName || "独立角色",
                 title: "开场白剧情",
                 content: tempGtgText,
                 bindings: tempGtgBindingLog || '主Char人设',
+                originDraft: {
+                    outline: rawOutline,
+                    bindings: tempGtgBindingLog,
+                    styleSpec: styleText,
+                    createTime: new Date().toLocaleString()
+                },
                 meta: tempGtgText.substring(0, 100),
                 folder: '首页'
             });
@@ -7142,6 +7511,11 @@ ${getCharTemplate(true)}`;
                     <!-- 一行字显示绑定的世界书/世界观设定 -->
                     <div style="font-size:10px; color:#777; margin:6px 0; background:rgba(0,0,0,0.02); padding:4px 8px; border-radius:4px;">绑定配置: ${item.bindings || '主Char人设'}</div>
                     <div style="font-size:12px; color:var(--text-muted); white-space:pre-wrap; max-height:120px; overflow-y:auto; border-top: 1px dashed rgba(0,0,0,0.05); padding-top:6px; font-family:monospace;">${item.content}</div>
+                    ${item.originDraft ? `
+                    <details style="margin-top:6px; font-size:11px; background:rgba(0,0,0,0.02); padding:6px; border-radius:6px;">
+                        <summary style="cursor:pointer; color:#2e7d32; font-weight:bold;"> 展开查看开场白生成前剧情大纲原稿</summary>
+                        <div style="margin-top:4px; white-space:pre-wrap; color:var(--text-main); font-family:monospace;">【原始大纲】：\n${item.originDraft.outline || '无'}\n\n【文风设定】：\n${item.originDraft.styleSpec !== '无' ? item.originDraft.styleSpec : '未加文风'}\n\n【记录时间】：${item.originDraft.createTime || ''}</div>
+                    </details>` : ''}
                     <div style="display:flex; gap:6px; margin-top:8px; justify-content:flex-end; align-items:center;">
                         <select onchange="moveGreeting(${item.id}, this.value)" style="padding:2px 4px; font-size:11px; border-radius:4px; border:1px solid #ccc; background:#fff; height:24px;"><option value="">分组移动至...</option>${state.gregFolders.map(f=>`<option value="${f}">${f}</option>`).join('')}</select>
                         <button onclick="downloadSingleGreeting(${item.id}, 'docx')" class="btn-small">Docx</button>
@@ -7892,6 +8266,7 @@ ${activeTemplate}
                     relationsText: relationsText,
                     avatar: multiOptionMembers[0]?.avatar || '',
                     content: fullText,
+                    originDraft: tempCharOriginDraft,
                     worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
                     ifLines: [],
                     folder: '首页',
@@ -7904,6 +8279,7 @@ ${activeTemplate}
                     avatar: tempOptionAvatarStr,
                     isMulti: false,
                     content: fullText,
+                    originDraft: tempCharOriginDraft,
                     worldbooks: { city: '', workplace: '', supplements: [], relations: [], others: [], normal: [], ifWorldviews: [] },
                     ifLines: [],
                     folder: '首页',
