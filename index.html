@@ -4961,16 +4961,33 @@ ${activeTemplate}
         function manageUserTags(id) { const user = state.users.find(u => u.id == id); if (!user) return; const res = prompt("输入User标签:", (user.tags || []).join(',')); if (res === null) return; user.tags = res.split(/[,，]/).map(t => t.trim()).filter(t => t !== '').slice(0, 10); saveData(); renderUserList(document.querySelector('#user-folders .folder-tag.active')?.innerText || '首页'); }
         function savePreferredUserExportFormat(val) { state.preferredUserExportFormat = val; saveData(); }
 
+  // 【核心修复】：安全解包任意数据对象或字符串，彻底杜绝 .replace is not a function
+        function safeExtractString(val) {
+            if (val === null || val === undefined) return '';
+            if (typeof val === 'string') return val;
+            if (typeof val === 'object') {
+                if (typeof val.content === 'string') return val.content;
+                if (typeof val.data === 'string') return val.data;
+                try {
+                    return JSON.stringify(val, null, 2);
+                } catch(e) {
+                    return String(val);
+                }
+            }
+            return String(val);
+        }
+
         function downloadUserFile(dataStr, filename) { 
             const format = document.getElementById('user-export-format')?.value || state.preferredUserExportFormat || 'docx'; 
+            const textContent = safeExtractString(dataStr);
             if (format === 'txt') { 
-                triggerDownload(new Blob([dataStr], {type: "text/plain;charset=utf-8"}), filename + ".txt"); 
+                triggerDownload(new Blob([textContent], {type: "text/plain;charset=utf-8"}), filename + ".txt"); 
             } else if (format === 'docx') { 
-                const escapedData = dataStr
+                const escapedData = textContent
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
-                const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`; 
+                const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`; 
                 triggerDownload(new Blob(['\ufeff' + htmlEnvelope], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), filename + ".docx"); 
             } 
         }
@@ -4980,16 +4997,22 @@ ${activeTemplate}
             if (!user.relations) user.relations = [];
             let q = [];
             if (type === 'user') {
-                q.push({ data: user.content, name: user.name + "_User人设" });
+                q.push({ data: safeExtractString(user.content), name: user.name + "_User人设" });
             } else if (type === 'rel') {
-                user.relations.forEach((r, i) => q.push({ data: r, name: `${user.name}_User关系网_${i+1}` }));
+                user.relations.forEach((r, i) => q.push({ data: safeExtractString(r), name: `${user.name}_User关系网_${i+1}` }));
             }
             if (q.length === 0) return alert("暂无可导出的关系网或人设数据！");
             
+            // 移动端优化：单文件直接同步下载，不走异步弹窗，防止手机浏览器拦截手势
+            if (q.length === 1) {
+                downloadUserFile(q[0].data, q[0].name);
+                return;
+            }
+
             showDownloadProgress("确认导出文件", `准备导出 User: ${user.name} 的数据文件（共 ${q.length} 个），确认开始下载吗？`, true, async () => {
                 showDownloadAutoProgress("正在打包导出", "正在处理您的User数据，请稍候...", 1200);
                 for (let i = 0; i < q.length; i++) {
-                    await new Promise(r => setTimeout(r, 450));
+                    if (i > 0) await new Promise(r => setTimeout(r, 450));
                     downloadUserFile(q[i].data, q[i].name);
                 }
             });
@@ -4999,13 +5022,13 @@ ${activeTemplate}
             const user = state.users.find(u => u.id == id); if (!user) return;
             if (!user.relations) user.relations = [];
             let dq = [];
-            dq.push({ data: user.content, name: `${user.name}_User人设` });
-            user.relations.forEach((r, i) => dq.push({ data: r, name: `${user.name}_User关系网_${i+1}` }));
+            dq.push({ data: safeExtractString(user.content), name: `${user.name}_User人设` });
+            user.relations.forEach((r, i) => dq.push({ data: safeExtractString(r), name: `${user.name}_User关系网_${i+1}` }));
             
             showDownloadProgress("全量打包下载", `即将为您一键打包导出 User: ${user.name} 的全部数据文件（共 ${dq.length} 个），确认开始导出吗？`, true, async () => {
                 showDownloadAutoProgress("正在打包导出", "正在全量打包，请稍候...", 1500);
                 for (let i = 0; i < dq.length; i++) {
-                    await new Promise(r => setTimeout(r, 450));
+                    if (i > 0) await new Promise(r => setTimeout(r, 450));
                     downloadUserFile(dq[i].data, dq[i].name);
                 }
             });
@@ -5013,24 +5036,21 @@ ${activeTemplate}
 
         async function executeUserBatchDownload() { 
             if (selectedUserIds.length === 0) return; 
-            alert(`系统开始进行批量打包分发导出...`); 
             let dq = [];
             state.users.forEach(user => {
                 if (selectedUserIds.includes(user.id)) {
                     if (!user.relations) user.relations = [];
-                    dq.push({ data: user.content, name: `${user.name}_User人设` });
-                    user.relations.forEach((r, i) => dq.push({ data: r, name: `${user.name}_User关系网_${i+1}` }));
+                    dq.push({ data: safeExtractString(user.content), name: `${user.name}_User人设` });
+                    user.relations.forEach((r, i) => dq.push({ data: safeExtractString(r), name: `${user.name}_User关系网_${i+1}` }));
                 }
             });
-            alert(`即将为您连续导出打包好的全部 ${dq.length} 档数据文件...`);
             for (let i = 0; i < dq.length; i++) { 
-                await new Promise(r => setTimeout(r, 350)); 
+                if (i > 0) await new Promise(r => setTimeout(r, 400)); 
                 downloadUserFile(dq[i].data, dq[i].name); 
             } 
             cancelUserBatchMode(); 
         }
 
-        // 新增：高档全局下载弹窗控制器支持
         function showDownloadProgress(title, body, showCancel, onConfirm, onCancel) {
             const modal = document.getElementById('download-notice-modal');
             const titleEl = document.getElementById('download-notice-title');
@@ -5051,6 +5071,7 @@ ${activeTemplate}
             };
             modal.style.display = 'flex';
         }
+
         function showDownloadAutoProgress(title, body, duration = 2200) {
             const modal = document.getElementById('download-notice-modal');
             const titleEl = document.getElementById('download-notice-title');
@@ -5067,47 +5088,64 @@ ${activeTemplate}
 
         function downloadCardFile(dataStr, filename) { 
             const format = document.getElementById('card-export-format')?.value || state.preferredExportFormat || 'docx'; 
+            const textContent = safeExtractString(dataStr);
             if (format === 'txt') { 
-                triggerDownload(new Blob([dataStr], {type: "text/plain;charset=utf-8"}), filename + ".txt"); 
+                triggerDownload(new Blob([textContent], {type: "text/plain;charset=utf-8"}), filename + ".txt"); 
             } else if (format === 'docx') { 
-                const escapedData = dataStr
+                const escapedData = textContent
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
-                const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`; 
+                const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`; 
                 triggerDownload(new Blob(['\ufeff' + htmlEnvelope], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), filename + ".docx"); 
             } 
         }
+
+        // 【核心修复】：移除同步立即销毁 URL 的 Bug，延时 60 秒回收，保证移动端 Safari / 安卓能正常抓取下载
         function triggerDownload(blob, name) { 
-            showDownloadAutoProgress("🚀 导出成功", `已成功生成并下载文件：\n\n${name}\n\n请前往设备默认下载目录查看！`, 2400);
+            showDownloadAutoProgress("🚀 导出成功", `已成功生成文件：\n\n${name}\n\n请查看浏览器下载管理！`, 2000);
             const url = URL.createObjectURL(blob); 
             const a = document.createElement('a'); 
             a.href = url; 
             a.download = name; 
+            a.style.display = 'none';
             document.body.appendChild(a); 
             a.click(); 
             document.body.removeChild(a); 
-            URL.revokeObjectURL(url); 
+            setTimeout(() => {
+                URL.revokeObjectURL(url);
+            }, 60000);
         }
+
         async function exportCardFile(id, type) {
             const card = state.cards.find(c => c.id == id); if (!card) return; let fn = card.name; let q = [];
-            if (type === 'char') { q.push({ data: card.content, name: fn + "_人设" }); }
-            else if (type === 'city') { q.push({ data: card.worldbooks.city, name: fn + "_世界书_城市" }); }
-            else if (type === 'workplace') { q.push({ data: card.worldbooks.workplace, name: fn + "_世界书_工作地点" }); }
-            else if (type === 'supp') { (card.worldbooks.supplements||[]).forEach((s,i) => q.push({ data: s, name: `${fn}_世界书_人设补充_${i+1}` })); }
-            else if (type === 'rel') { (card.worldbooks.relations||[]).forEach((r,i) => q.push({ data: r, name: `${fn}_世界书_关系网_${i+1}` })); }
-            else if (type === 'other') { (card.worldbooks.others||[]).forEach((o,i) => q.push({ data: o, name: `${fn}_世界书_其他设定_${i+1}` })); }
-            else if (type === 'ifchar') { (card.ifLines||[]).forEach((il) => q.push({ data: il.content, name: `${fn}_if线人设_${il.tag}` })); }
-            else if (type === 'normalwv') { (card.worldbooks.normal||[]).forEach((nw,i) => q.push({ data: nw, name: `${fn}_普通世界观_${i+1}` })); }
-            else if (type === 'ifwv') { (card.worldbooks.ifWorldviews||[]).forEach((iw) => q.push({ data: iw.content, name: `${fn}_if线世界观_${iw.tag}` })); }
+            if (type === 'char') { q.push({ data: safeExtractString(card.content), name: fn + "_人设" }); }
+            else if (type === 'city') { q.push({ data: safeExtractString(card.worldbooks.city), name: fn + "_世界书_城市" }); }
+            else if (type === 'workplace') { q.push({ data: safeExtractString(card.worldbooks.workplace), name: fn + "_世界书_工作地点" }); }
+            else if (type === 'supp') { (card.worldbooks.supplements||[]).forEach((s,i) => q.push({ data: safeExtractString(s), name: `${fn}_世界书_人设补充_${i+1}` })); }
+            else if (type === 'rel') { (card.worldbooks.relations||[]).forEach((r,i) => q.push({ data: safeExtractString(r), name: `${fn}_世界书_关系网_${i+1}` })); }
+            else if (type === 'other') { (card.worldbooks.others||[]).forEach((o,i) => q.push({ data: safeExtractString(o), name: `${fn}_世界书_其他设定_${i+1}` })); }
+            else if (type === 'ifchar') { (card.ifLines||[]).forEach((il, i) => q.push({ data: safeExtractString(il), name: `${fn}_if线人设_${il.tag || (i+1)}` })); }
+            else if (type === 'normalwv') { (card.worldbooks.normal||[]).forEach((nw,i) => q.push({ data: safeExtractString(nw), name: `${fn}_普通世界观_${i+1}` })); }
+            else if (type === 'ifwv') { (card.worldbooks.ifWorldviews||[]).forEach((iw, i) => q.push({ data: safeExtractString(iw), name: `${fn}_if线世界观_${iw.tag || (i+1)}` })); }
             
-            if(q.length === 0) return alert("暂无数据导出！");
+            if(q.length === 0) return alert("暂无可导出的数据！");
             
+            // 单文件直接由用户手势同步唤起下载，杜绝 iOS / 安卓弹窗拦截
+            if (q.length === 1) {
+                downloadCardFile(q[0].data, q[0].name);
+                return;
+            }
+
             showDownloadProgress("确认导出文件", `准备导出 ${card.name} 的设定文件（共 ${q.length} 个），确认开始下载吗？`, true, async () => {
                 showDownloadAutoProgress("正在打包导出", "正在全速处理中，请稍候...", 1200);
-                for (let i = 0; i < q.length; i++) { await new Promise(r => setTimeout(r, 450)); downloadCardFile(q[i].data, q[i].name); }
+                for (let i = 0; i < q.length; i++) { 
+                    if (i > 0) await new Promise(r => setTimeout(r, 450)); 
+                    downloadCardFile(q[i].data, q[i].name); 
+                }
             });
         }
+
         function exportSingleSubCharOfMulti(cardId, subName) {
             const card = state.cards.find(c => c.id == cardId);
             if (!card) return;
@@ -5116,13 +5154,13 @@ ${activeTemplate}
                 const sub = card.members.find(m => m.name === subName);
                 if (sub && sub.content) targetContent = sub.content;
             }
-            downloadCardFile(targetContent, `${card.name}_${subName}_人设`);
+            downloadCardFile(safeExtractString(targetContent), `${card.name}_${subName}_人设`);
         }
 
         function exportMultiRelationsFile(cardId) {
             const card = state.cards.find(c => c.id == cardId);
             if (!card || !card.relationsText) return alert("暂无关系网数据！");
-            downloadCardFile(card.relationsText, `${card.name}_多人关系网`);
+            downloadCardFile(safeExtractString(card.relationsText), `${card.name}_多人关系网`);
         }
 
         async function exportAllForCard(id) {
@@ -5130,48 +5168,52 @@ ${activeTemplate}
             const isMulti = card.isMulti || (card.tags && card.tags.includes('多人卡'));
 
             if (isMulti && card.members && card.members.length > 0) {
-                // 多人卡：每个角色独立生成一份专属文件！
                 card.members.forEach(m => {
-                    dq.push({ data: m.content || card.content, name: `${card.name}_${m.name}_人设` });
+                    dq.push({ data: safeExtractString(m.content || card.content), name: `${card.name}_${m.name}_人设` });
                 });
                 if (card.relationsText) {
-                    dq.push({ data: card.relationsText, name: `${card.name}_多人关系网` });
+                    dq.push({ data: safeExtractString(card.relationsText), name: `${card.name}_多人关系网` });
                 }
             } else {
-                dq.push({ data: card.content, name: `${card.name}_人设` });
+                dq.push({ data: safeExtractString(card.content), name: `${card.name}_人设` });
             }
 
-            if (card.worldbooks.city) dq.push({ data: card.worldbooks.city, name: `${card.name}_世界书_城市` });
-            if (card.worldbooks.workplace) dq.push({ data: card.worldbooks.workplace, name: `${card.name}_世界书_工作地点` });
-            (card.worldbooks.supplements || []).forEach((s, i) => dq.push({ data: s, name: `${card.name}_世界书_人设补充_${i+1}` }));
-            (card.worldbooks.relations || []).forEach((r, i) => dq.push({ data: r, name: `${card.name}_世界书_关系网_${i+1}` }));
-            (card.worldbooks.others || []).forEach((o, i) => dq.push({ data: o, name: `${card.name}_世界书_其他设定_${i+1}` }));
-            (card.ifLines || []).forEach((il) => dq.push({ data: il.content, name: `${card.name}_if线人设_${il.tag}` }));
-            (card.worldbooks.normal || []).forEach((nw, i) => dq.push({ data: nw, name: `${card.name}_普通世界观_${i+1}` }));
-            (card.worldbooks.ifWorldviews || []).forEach((iw) => dq.push({ data: iw.content, name: `${card.name}_if线世界观_${iw.tag}` }));
+            if (card.worldbooks.city) dq.push({ data: safeExtractString(card.worldbooks.city), name: `${card.name}_世界书_城市` });
+            if (card.worldbooks.workplace) dq.push({ data: safeExtractString(card.worldbooks.workplace), name: `${card.name}_世界书_工作地点` });
+            (card.worldbooks.supplements || []).forEach((s, i) => dq.push({ data: safeExtractString(s), name: `${card.name}_世界书_人设补充_${i+1}` }));
+            (card.worldbooks.relations || []).forEach((r, i) => dq.push({ data: safeExtractString(r), name: `${card.name}_世界书_关系网_${i+1}` }));
+            (card.worldbooks.others || []).forEach((o, i) => dq.push({ data: safeExtractString(o), name: `${card.name}_世界书_其他设定_${i+1}` }));
+            (card.ifLines || []).forEach((il, i) => dq.push({ data: safeExtractString(il), name: `${card.name}_if线人设_${il.tag || (i+1)}` }));
+            (card.worldbooks.normal || []).forEach((nw, i) => dq.push({ data: safeExtractString(nw), name: `${card.name}_普通世界观_${i+1}` }));
+            (card.worldbooks.ifWorldviews || []).forEach((iw, i) => dq.push({ data: safeExtractString(iw), name: `${card.name}_if线世界观_${iw.tag || (i+1)}` }));
             
             showDownloadProgress("全量分文件导出", `即将为您连续导出 ${card.name} 的全部独立设定文件（共 ${dq.length} 个文件），确认开始下载吗？`, true, async () => {
                 showDownloadAutoProgress("全量打包导出", "正在逐份处理下载，请稍候...", 1800);
                 for (let i = 0; i < dq.length; i++) { 
-                    await new Promise(r => setTimeout(r, 450)); 
+                    if (i > 0) await new Promise(r => setTimeout(r, 450)); 
                     downloadCardFile(dq[i].data, dq[i].name); 
                 }
             });
         }
+
         async function executeCardBatchDownload() {
             if (selectedCardIds.length === 0) return; let dq = [];
             state.cards.forEach(card => { if (selectedCardIds.includes(card.id)) {
-                dq.push({ data: card.content, name: `${card.name}_人设` });
-                if (card.worldbooks.city) dq.push({ data: card.worldbooks.city, name: `${card.name}_世界书_城市` });
-                if (card.worldbooks.workplace) dq.push({ data: card.worldbooks.workplace, name: `${card.name}_世界书_工作地点` });
-                (card.worldbooks.supplements || []).forEach((s, i) => dq.push({ data: s, name: `${card.name}_世界书_人设补充_${i+1}` }));
-                (card.worldbooks.relations || []).forEach((r, i) => dq.push({ data: r, name: `${card.name}_世界书_关系网_${i+1}` }));
-                (card.worldbooks.others || []).forEach((o, i) => dq.push({ data: o, name: `${card.name}_世界书_其他设定_${i+1}` }));
-                (card.ifLines || []).forEach((il) => dq.push({ data: il.content, name: `${card.name}_if线人设_${il.tag}` }));
-                (card.worldbooks.normal || []).forEach((nw, i) => dq.push({ data: nw, name: `${card.name}_普通世界观_${i+1}` }));
-                (card.worldbooks.ifWorldviews || []).forEach((iw) => dq.push({ data: iw.content, name: `${card.name}_if线世界观_${iw.tag}` }));
+                dq.push({ data: safeExtractString(card.content), name: `${card.name}_人设` });
+                if (card.worldbooks.city) dq.push({ data: safeExtractString(card.worldbooks.city), name: `${card.name}_世界书_城市` });
+                if (card.worldbooks.workplace) dq.push({ data: safeExtractString(card.worldbooks.workplace), name: `${card.name}_世界书_工作地点` });
+                (card.worldbooks.supplements || []).forEach((s, i) => dq.push({ data: safeExtractString(s), name: `${card.name}_世界书_人设补充_${i+1}` }));
+                (card.worldbooks.relations || []).forEach((r, i) => dq.push({ data: safeExtractString(r), name: `${card.name}_世界书_关系网_${i+1}` }));
+                (card.worldbooks.others || []).forEach((o, i) => dq.push({ data: safeExtractString(o), name: `${card.name}_世界书_其他设定_${i+1}` }));
+                (card.ifLines || []).forEach((il, i) => dq.push({ data: safeExtractString(il), name: `${card.name}_if线人设_${il.tag || (i+1)}` }));
+                (card.worldbooks.normal || []).forEach((nw, i) => dq.push({ data: safeExtractString(nw), name: `${card.name}_普通世界观_${i+1}` }));
+                (card.worldbooks.ifWorldviews || []).forEach((iw, i) => dq.push({ data: safeExtractString(iw), name: `${card.name}_if线世界观_${iw.tag || (i+1)}` }));
             }});
-            alert(`准备分发导出共 ${dq.length} 档文件...`); for (let i = 0; i < dq.length; i++) { await new Promise(r => setTimeout(r, 350)); downloadCardFile(dq[i].data, dq[i].name); } cancelCardBatchMode();
+            for (let i = 0; i < dq.length; i++) { 
+                if (i > 0) await new Promise(r => setTimeout(r, 400)); 
+                downloadCardFile(dq[i].data, dq[i].name); 
+            } 
+            cancelCardBatchMode();
         }
 
         function deepSearchUrl(obj) { if (typeof obj === 'string') { if (obj.startsWith('http') || obj.startsWith('data:image')) return obj; } if (obj && typeof obj === 'object') { if (Array.isArray(obj)) { for (let val of obj) { let r = deepSearchUrl(val); if (r) return r; } } else { if (obj.b64_json) return `data:image/png;base64,${obj.b64_json}`; for (let key in obj) { let r = deepSearchUrl(obj[key]); if (r) return r; } } } return null; }
@@ -6041,6 +6083,18 @@ async function deleteActiveModalImage() {
         }
 
         function executeWbFileConversionAndDownload(dataStr, filename, format) {
+    const textContent = safeExtractString(dataStr);
+    if (format === 'txt') {
+        triggerDownload(new Blob([textContent], {type: "text/plain;charset=utf-8"}), filename + ".txt");
+    } else if (format === 'docx') {
+        const escapedData = textContent
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`;
+        triggerDownload(new Blob(['\ufeff' + htmlEnvelope], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), filename + ".docx");
+    }
+} {
             if (format === 'txt') {
                 triggerDownload(new Blob([dataStr], {type: "text/plain;charset=utf-8"}), filename + ".txt");
             } else if (format === 'docx') {
@@ -7584,6 +7638,18 @@ ${getCharTemplate(true)}`;
         }
 
         function executeWbFileConversionAndDownload(dataStr, filename, format) {
+    const textContent = safeExtractString(dataStr);
+    if (format === 'txt') {
+        triggerDownload(new Blob([textContent], {type: "text/plain;charset=utf-8"}), filename + ".txt");
+    } else if (format === 'docx') {
+        const escapedData = textContent
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`;
+        triggerDownload(new Blob(['\ufeff' + htmlEnvelope], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), filename + ".docx");
+    }
+} {
             if (format === 'txt') {
                 triggerDownload(new Blob([dataStr], {type: "text/plain;charset=utf-8"}), filename + ".txt");
             } else if (format === 'docx') {
