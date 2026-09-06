@@ -3035,14 +3035,20 @@ Proactive & Non-proactive：
 
         const DB_NAME = 'ErjiWorkshopDB'; const STORE_NAME = 'AppState'; let db = null;
 
+        let isDataLoadedSuccessfully = false; // 全局防误洗锁：未读取成功前禁止覆盖写入
+
         function initDB() { 
             return new Promise((r) => { 
-                let finished = false;
+                let resolved = false;
+                // 宽容等待：手机端冷启动预留足够时间，且即使超时，成功回调依然会无条件挂载 db
                 const timeoutTimer = setTimeout(() => {
-                    if (!finished) { finished = true; r(); }
-                }, 400);
+                    if (!resolved) { resolved = true; r(); }
+                }, 2000);
 
-                if (!window.indexedDB) { finished = true; clearTimeout(timeoutTimer); r(); return; } 
+                if (!window.indexedDB) { 
+                    if (!resolved) { resolved = true; clearTimeout(timeoutTimer); r(); }
+                    return; 
+                } 
                 try { 
                     const req = indexedDB.open(DB_NAME, 3); 
                     req.onupgradeneeded = (e) => { 
@@ -3054,23 +3060,25 @@ Proactive & Non-proactive：
                         } catch(err) {}
                     }; 
                     req.onsuccess = (e) => { 
-                        if (!finished) { 
-                            finished = true; 
+                        db = e.target.result; // 无论是否超时，只要成功打开，立刻绑定数据库对象
+                        if (!resolved) { 
+                            resolved = true; 
                             clearTimeout(timeoutTimer); 
-                            db = e.target.result; 
                             r(); 
                         }
                     }; 
                     req.onerror = () => { 
-                        if (!finished) { finished = true; clearTimeout(timeoutTimer); r(); }
+                        if (!resolved) { resolved = true; clearTimeout(timeoutTimer); r(); }
                     }; 
+                    req.onblocked = () => {
+                        if (!resolved) { resolved = true; clearTimeout(timeoutTimer); r(); }
+                    };
                 } catch(e) { 
-                    if (!finished) { finished = true; clearTimeout(timeoutTimer); r(); }
+                    if (!resolved) { resolved = true; clearTimeout(timeoutTimer); r(); }
                 } 
             }); 
         }
 
-        // 提取核心轻量配置（标签、分类、模板、API等），永不超限，绝对保证 100% 存活
         function extractCoreConfig(s) {
             return {
                 customGenders: s.customGenders || [],
@@ -3103,51 +3111,64 @@ Proactive & Non-proactive：
         }
 
         async function saveToDB(key, data) {
-            // 1. 同步将核心标签与配置存入 localStorage 独立专区（永不超配额，秒级持久化）
+            // 【安全防御】：如果处于初始化加载阶段，严禁执行保存，防止用未加载完全的空数据洗掉本地库
+            if (!isDataLoadedSuccessfully) return false;
+
+            // 1. 同步将轻量核心配置落盘（永不超限）
             try {
                 const coreConfig = extractCoreConfig(data);
                 localStorage.setItem('erji_core_config', JSON.stringify(coreConfig));
             } catch(err) {}
 
-            // 2. 尝试将完整数据备份至 localStorage，超限时智能清理旧缓存，防止读到陈旧数据
+            // 2. 智能容灾备份至 localStorage（彻底移除 removeItem 逻辑，永不主动删数据）
             try {
                 localStorage.setItem(key, JSON.stringify(data));
-                localStorage.removeItem(key + '_pruned');
             } catch (e) {
                 try {
-                    // 超限时移除可能导致覆盖的旧版 key，安全写入精简版
-                    localStorage.removeItem(key);
-                    const pruned = JSON.parse(JSON.stringify(data));
-                    pruned.images = (pruned.images || []).slice(0, 15); // 保留最新部分图片
-                    localStorage.setItem(key + '_pruned', JSON.stringify(pruned));
+                    // 超限时剥离超大 Base64 头像，保留全量角色/世界书/User的纯文本，确保永不超 5MB
+                    const textSafeData = JSON.parse(JSON.stringify(data));
+                    if (Array.isArray(textSafeData.cards)) {
+                        textSafeData.cards.forEach(c => { if (c.avatar && c.avatar.length > 500) c.avatar = ''; });
+                    }
+                    if (Array.isArray(textSafeData.users)) {
+                        textSafeData.users.forEach(u => { if (u.avatar && u.avatar.length > 500) u.avatar = ''; });
+                    }
+                    textSafeData.images = []; // 生图在相册有大容量IndexedDB承载，备份中跳过
+                    localStorage.setItem(key + '_text_backup', JSON.stringify(textSafeData));
                 } catch(err) {}
             }
 
-            // 3. 正常写入无容量上限的本地 IndexedDB 数据库
+            // 3. 核心主力：写入无容量上限的本地 IndexedDB 数据库
             return new Promise((r) => {
-                if (!db) { r(true); return; }
-                try {
-                    const tx = db.transaction(STORE_NAME, 'readwrite');
-                    const store = tx.objectStore(STORE_NAME);
-                    store.put(data, key);
-                    tx.oncomplete = () => r(true);
-                    tx.onerror = () => r(true);
-                    tx.onabort = () => r(true);
-                } catch(e) {
-                    r(true);
+                const executeWrite = () => {
+                    if (!db) { r(true); return; }
+                    try {
+                        const tx = db.transaction(STORE_NAME, 'readwrite');
+                        const store = tx.objectStore(STORE_NAME);
+                        store.put(data, key);
+                        tx.oncomplete = () => r(true);
+                        tx.onerror = () => r(true);
+                        tx.onabort = () => r(true);
+                    } catch(e) {
+                        r(true);
+                    }
+                };
+
+                if (!db) {
+                    initDB().then(executeWrite);
+                } else {
+                    executeWrite();
                 }
             });
         }
 
         async function loadFromDB(key) {
-            // 1. 读取保底核心配置
-            let coreConfig = null;
-            try {
-                const coreRaw = localStorage.getItem('erji_core_config');
-                if (coreRaw) coreConfig = JSON.parse(coreRaw);
-            } catch(e) {}
+            // 1. 确保尽量等待 IndexedDB 准备完毕
+            if (!db && window.indexedDB) {
+                await initDB();
+            }
 
-            // 2. 从 IndexedDB 或 localStorage 读取完整数据集
+            // 2. 优先从容量无限的 IndexedDB 读取
             let fullData = null;
             if (db) {
                 try {
@@ -3160,21 +3181,31 @@ Proactive & Non-proactive：
                 } catch(e) {}
             }
 
+            // 3. 多级容灾回退：localStorage 原文 -> 纯文本容灾备份 -> 缓存快照
             if (!fullData) {
                 try {
-                    const raw = localStorage.getItem(key) || localStorage.getItem(key + '_pruned');
+                    const raw = localStorage.getItem(key) || 
+                                localStorage.getItem(key + '_pruned') || 
+                                localStorage.getItem(key + '_text_backup') || 
+                                localStorage.getItem('global_state_cache');
                     if (raw) fullData = JSON.parse(raw);
                 } catch(e) {}
             }
 
-            // 3. 核心机制：将轻量保底配置与完整数据安全深度合并，确保标签和配置 100% 存活
+            // 4. 读取独立配置中心保底
+            let coreConfig = null;
+            try {
+                const coreRaw = localStorage.getItem('erji_core_config');
+                if (coreRaw) coreConfig = JSON.parse(coreRaw);
+            } catch(e) {}
+
+            // 5. 深度安全聚合
             if (fullData || coreConfig) {
                 const merged = Object.assign({}, fullData || {});
                 if (coreConfig) {
                     for (let k in coreConfig) {
-                        // 如果核心配置有更新的标签列表，确保合并恢复
                         if (Array.isArray(coreConfig[k]) && coreConfig[k].length > 0) {
-                            merged[k] = coreConfig[k];
+                            if (!merged[k] || merged[k].length === 0) merged[k] = coreConfig[k];
                         } else if (coreConfig[k] !== undefined && coreConfig[k] !== '') {
                             if (merged[k] === undefined || merged[k] === '') {
                                 merged[k] = coreConfig[k];
@@ -3483,7 +3514,13 @@ Proactive & Non-proactive：
             }
         };
 
-        async function saveData() { return await saveToDB('global_state', state); }
+        async function saveData() { 
+            // 只要数据还没从数据库读出来，或者内存是空的，严禁保存！杜绝覆盖！
+            if (!isDataLoadedSuccessfully) {
+                return false;
+            }
+            return await saveToDB('global_state', state); 
+        }
 
         async function loadData() {
             const data = await loadFromDB('global_state');
@@ -3536,21 +3573,27 @@ Proactive & Non-proactive：
             // 立即重绘所有自建标签，确保刷新后 100% 存在
             renderAllSelectableTags();
 
+            // 纯粹初始化 UI 显示，严禁在读取阶段回写空数据！
             if (document.getElementById('jailbreak-cb')) {
-                document.getElementById('jailbreak-cb').checked = state.jailbreakEnabled || false; 
+                const jbChk = state.jailbreakEnabled || false;
+                document.getElementById('jailbreak-cb').checked = jbChk; 
                 document.getElementById('jailbreak-prompt-textarea').value = state.jailbreakPrompt || ''; 
-                toggleJailbreakUI();
+                document.getElementById('jailbreak-ui-panel').style.display = jbChk ? 'block' : 'none';
             }
             if (document.getElementById('wb-jailbreak-cb')) {
-                document.getElementById('wb-jailbreak-cb').checked = state.wbJailbreakEnabled || false; 
+                const wbjbChk = state.wbJailbreakEnabled || false;
+                document.getElementById('wb-jailbreak-cb').checked = wbjbChk; 
                 document.getElementById('wb-jailbreak-prompt-textarea').value = state.wbJailbreakPrompt || ''; 
-                toggleWbJailbreakUI();
+                document.getElementById('wb-jailbreak-ui-panel').style.display = wbjbChk ? 'block' : 'none';
             }
             if (document.getElementById('wbg-jailbreak-cb')) {
-                document.getElementById('wbg-jailbreak-cb').checked = state.wbgJailbreakEnabled || false; 
+                const wgbChk = state.wbgJailbreakEnabled || false;
+                document.getElementById('wbg-jailbreak-cb').checked = wgbChk; 
                 document.getElementById('wbg-jailbreak-prompt-textarea').value = state.wbgJailbreakPrompt || ''; 
-                toggleWbgJailbreakUI();
+                document.getElementById('wbg-jailbreak-ui-panel').style.display = wgbChk ? 'block' : 'none';
             }
+
+            isDataLoadedSuccessfully = true; // 解除防误洗锁，此时正式允许保存
 
             if (state.customMainBg) { 
                 applyWallpapers(state.customMainBg); 
@@ -6083,27 +6126,15 @@ async function deleteActiveModalImage() {
         }
 
         function executeWbFileConversionAndDownload(dataStr, filename, format) {
-    const textContent = safeExtractString(dataStr);
-    if (format === 'txt') {
-        triggerDownload(new Blob([textContent], {type: "text/plain;charset=utf-8"}), filename + ".txt");
-    } else if (format === 'docx') {
-        const escapedData = textContent
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-        const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`;
-        triggerDownload(new Blob(['\ufeff' + htmlEnvelope], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), filename + ".docx");
-    }
-} {
+            const textContent = safeExtractString(dataStr);
             if (format === 'txt') {
-                triggerDownload(new Blob([dataStr], {type: "text/plain;charset=utf-8"}), filename + ".txt");
+                triggerDownload(new Blob([textContent], {type: "text/plain;charset=utf-8"}), filename + ".txt");
             } else if (format === 'docx') {
-                const escapedData = dataStr
+                const escapedData = textContent
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
-                // 核心修改：使用 <pre> 元素，确保 WPS 识别原生换行、空格及首行缩进
-                const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`;
+                const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`;
                 triggerDownload(new Blob(['\ufeff' + htmlEnvelope], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), filename + ".docx");
             }
         }
@@ -7638,27 +7669,15 @@ ${getCharTemplate(true)}`;
         }
 
         function executeWbFileConversionAndDownload(dataStr, filename, format) {
-    const textContent = safeExtractString(dataStr);
-    if (format === 'txt') {
-        triggerDownload(new Blob([textContent], {type: "text/plain;charset=utf-8"}), filename + ".txt");
-    } else if (format === 'docx') {
-        const escapedData = textContent
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-        const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`;
-        triggerDownload(new Blob(['\ufeff' + htmlEnvelope], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), filename + ".docx");
-    }
-} {
+            const textContent = safeExtractString(dataStr);
             if (format === 'txt') {
-                triggerDownload(new Blob([dataStr], {type: "text/plain;charset=utf-8"}), filename + ".txt");
+                triggerDownload(new Blob([textContent], {type: "text/plain;charset=utf-8"}), filename + ".txt");
             } else if (format === 'docx') {
-                const escapedData = dataStr
+                const escapedData = textContent
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
-                // 核心修改：使用 <pre> 元素，确保 WPS 识别原生换行、空格及首行缩进
-                const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`;
+                const htmlEnvelope = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title><style>body { margin: 0; padding: 0; } pre { font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; color: #000; margin: 0; padding: 0; }</style></head><body><pre>${escapedData}</pre></body></html>`;
                 triggerDownload(new Blob(['\ufeff' + htmlEnvelope], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), filename + ".docx");
             }
         }
