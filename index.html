@@ -5345,7 +5345,65 @@ ${activeTemplate}
         function toggleSelectImage(id) { const idx = selectedImageIds.indexOf(id); if (idx > -1) selectedImageIds.splice(idx, 1); else selectedImageIds.push(id); if (selectedImageIds.length === 0) cancelBatchMode(); else updateBatchUI(); }
         async function executeBatchMove(target) { if(!target) return; state.images.forEach(img => { if(selectedImageIds.includes(img.id)) img.folder = target; }); await saveData(); cancelBatchMode(); }
         async function executeBatchDelete() { if(confirm("确定彻底删除吗？")) { state.images = state.images.filter(img => !selectedImageIds.includes(img.id)); await saveData(); cancelBatchMode(); } }
-        async function forceDownload(url, filename) { try { const res = await fetch(url, { mode: 'cors' }); const blob = await res.blob(); const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); } catch (e) { try { const proxyUrl = "https://corsproxy.io/?url=" + encodeURIComponent(url); const res = await fetch(proxyUrl); const blob = await res.blob(); const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); } catch(err) { window.open(url, '_blank'); } } }
+        async function forceDownload(url, filename) {
+            if (!url) return;
+            // 1. 如果是 Base64 格式图片，直接物理转为真实 PNG 二进制 Blob，杜绝网络请求与格式篡改
+            if (url.startsWith('data:image')) {
+                try {
+                    const parts = url.split(',');
+                    const mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/png';
+                    const bstr = atob(parts[1]);
+                    let n = bstr.length;
+                    const u8arr = new Uint8Array(n);
+                    while (n--) {
+                        u8arr[n] = bstr.charCodeAt(n);
+                    }
+                    const blob = new Blob([u8arr], { type: mime });
+                    triggerDownload(blob, filename);
+                    return;
+                } catch(err) {
+                    console.error("Base64 转换失败", err);
+                }
+            }
+
+            // 2. 如果是网络直链，先尝试直连获取，并严格校验 MIME 类型
+            try {
+                const res = await fetch(url, { mode: 'cors' });
+                if (res.ok) {
+                    const blob = await res.blob();
+                    // 拦截非图片（如返回了报错 json / html）
+                    if (!blob.type.includes('json') && !blob.type.includes('text') && !blob.type.includes('html')) {
+                        const imgBlob = new Blob([blob], { type: 'image/png' });
+                        triggerDownload(imgBlob, filename);
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            // 3. 直连受限时尝试代理中转，并强制校验确保必须是图片二进制流
+            try {
+                const proxyBase = state.iApiProxy || "https://corsproxy.io/?url=";
+                const proxyUrl = proxyBase.includes('?url=') ? (proxyBase + encodeURIComponent(url)) : (proxyBase + url);
+                const res = await fetch(proxyUrl);
+                if (res.ok) {
+                    const blob = await res.blob();
+                    if (!blob.type.includes('json') && !blob.type.includes('text') && !blob.type.includes('html')) {
+                        const imgBlob = new Blob([blob], { type: 'image/png' });
+                        triggerDownload(imgBlob, filename);
+                        return;
+                    }
+                }
+            } catch(err) {}
+
+            // 4. 手机端保底：唤起新标签页以便长按保存真实原图
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
         async function executeBatchDownload() { const targets = state.images.filter(i => selectedImageIds.includes(i.id)); for(let i=0; i<targets.length; i++) { await new Promise(r => setTimeout(r, 300)); await forceDownload(targets[i].url, `图_${targets[i].id}.png`); } cancelBatchMode(); }
         function showGalleryModal(idx) { currentGalleryIndex = idx; updateModalCarousel(); document.getElementById('img-modal').style.display = 'flex'; }
         function updateModalCarousel() { const img = document.getElementById('modal-img-src'); if (currentGalleryImages[currentGalleryIndex]) { img.src = currentGalleryImages[currentGalleryIndex].url; document.getElementById('modal-carousel-left').style.display = currentGalleryIndex > 0 ? 'flex' : 'none'; document.getElementById('modal-carousel-right').style.display = currentGalleryIndex < currentGalleryImages.length - 1 ? 'flex' : 'none'; } }
