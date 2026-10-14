@@ -11,6 +11,8 @@
     <meta name="theme-color" content="#222222">
     <link rel="apple-touch-icon" href="https://image.58sb.cn/file/img/Hf1QocJ4.jpg">
     <link rel="icon" type="image/jpeg" href="https://image.58sb.cn/file/img/Hf1QocJ4.jpg">
+    <!-- 引入官方 Supabase 客户端，国内直连免开代理 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* ================= 极简黑白灰拟态 iOS 变量与基础 ================= */
         :root {
@@ -579,9 +581,201 @@
                     height: 150px;
                 }
             }
+
+            /* ================= 认证系统黑白灰拟态遮罩与卡片 ================= */
+            .auth-modal-mask {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: rgba(244, 245, 246, 0.96);
+                backdrop-filter: blur(25px);
+                -webkit-backdrop-filter: blur(25px);
+                z-index: 99999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+            .auth-card {
+                width: 100%;
+                max-width: 380px;
+                background-color: var(--bg-glass-heavy);
+                border: 1.5px solid var(--border-glass);
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+                border-radius: 24px;
+                padding: 28px 24px;
+                display: flex;
+                flex-direction: column;
+                position: relative;
+            }
+            .auth-tabs {
+                display: flex;
+                background: rgba(0, 0, 0, 0.04);
+                border-radius: 12px;
+                padding: 3px;
+                margin-bottom: 22px;
+                gap: 4px;
+            }
+            .auth-tab-btn {
+                flex: 1;
+                padding: 9px 0;
+                text-align: center;
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--text-muted);
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                background: none;
+                border: none;
+            }
+            .auth-tab-btn.active {
+                background: #222222;
+                color: #ffffff;
+            }
+            .auth-field {
+                display: flex;
+                flex-direction: column;
+                margin-bottom: 14px;
+            }
+            .auth-field label {
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--text-muted);
+                margin-bottom: 6px;
+                letter-spacing: 0.5px;
+            }
+            .auth-divider {
+                display: flex;
+                align-items: center;
+                margin: 18px 0 14px 0;
+                color: var(--text-light);
+                font-size: 11px;
+            }
+            .auth-divider::before, .auth-divider::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: var(--border-subtle);
+            }
+            .auth-divider span {
+                padding: 0 10px;
+            }
+            .auth-btn-dc {
+                background-color: #2c2f33;
+                color: #ffffff;
+                border: none;
+                width: 100%;
+                padding: 12px;
+                border-radius: 12px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                transition: opacity 0.2s;
+            }
+            .auth-btn-dc:active {
+                opacity: 0.85;
+            }
+            .auth-msg-box {
+                font-size: 11px;
+                margin-top: 10px;
+                text-align: center;
+                min-height: 16px;
+                line-height: 1.4;
+            }
+            .auth-msg-box.err {
+                color: #e74c3c;
+            }
+            .auth-msg-box.suc {
+                color: #27ae60;
+            }
     </style>
 </head>
 <body>
+
+    <!-- 全局认证覆盖层 (未通过验证无法进入系统) -->
+    <div id="auth-modal-overlay" class="auth-modal-mask">
+        <div class="auth-card">
+            <div style="text-align: center; margin-bottom: 18px;">
+                <div style="font-size: 18px; font-weight: bold; color: var(--text-main); letter-spacing: 0.5px;">耳机の生成工坊</div>
+                <div style="font-size: 11px; color: var(--text-light); margin-top: 4px;">通行认证中心</div>
+            </div>
+
+            <!-- 切换标签 -->
+            <div class="auth-tabs">
+                <button type="button" class="auth-tab-btn active" id="tab-auth-login" onclick="switchAuthTab('login')">账号登录</button>
+                <button type="button" class="auth-tab-btn" id="tab-auth-register" onclick="switchAuthTab('register')">新用户注册</button>
+                <button type="button" class="auth-tab-btn" id="tab-auth-reset" onclick="switchAuthTab('reset')">更改密码</button>
+            </div>
+
+            <!-- 登录面板 -->
+            <div id="panel-auth-login">
+                <div class="auth-field">
+                    <label>QQ 号码</label>
+                    <input type="text" id="auth-login-qq" class="input-text" placeholder="输入已注册的QQ号">
+                </div>
+                <div class="auth-field">
+                    <label>密码</label>
+                    <input type="password" id="auth-login-pwd" class="input-text" placeholder="输入密码">
+                </div>
+                <button type="button" class="btn btn-primary" id="btn-auth-login-submit" onclick="handleQQLogin()" style="width: 100%; margin-top: 6px;">登录工坊</button>
+
+                <!-- 新设备激活授权输入区（仅在设备达到上限时动态展开） -->
+                <div id="auth-new-device-box" style="display: none; margin-top: 16px; padding: 12px; border-radius: 12px; background: rgba(0,0,0,0.02); border: 1px dashed var(--border-subtle);">
+                    <div style="font-size: 11px; font-weight: bold; color: var(--text-main); margin-bottom: 6px;">本浏览器未授权，使用新激活码扩充绑定：</div>
+                    <input type="text" id="auth-new-device-code" class="input-text" style="font-size: 12px; margin-bottom: 8px;" placeholder="输入新的有效激活码">
+                    <button type="button" class="btn btn-secondary" onclick="handleAuthorizeNewDevice()" style="width: 100%; font-size: 12px; padding: 8px;">验证新码并授权当前浏览器</button>
+                </div>
+            </div>
+
+            <!-- 注册面板 -->
+            <div id="panel-auth-register" style="display: none;">
+                <div class="auth-field">
+                    <label>QQ 号码</label>
+                    <input type="text" id="auth-reg-qq" class="input-text" placeholder="输入本人QQ号">
+                </div>
+                <div class="auth-field">
+                    <label>密码 (至少6位)</label>
+                    <input type="password" id="auth-reg-pwd" class="input-text" placeholder="设置登录密码">
+                </div>
+                <div class="auth-field">
+                    <label>激活码 (一码仅限绑定一个QQ号)</label>
+                    <input type="text" id="auth-reg-code" class="input-text" placeholder="长按粘贴入框">
+                </div>
+                <button type="button" class="btn btn-primary" id="btn-auth-reg-submit" onclick="handleQQRegister()" style="width: 100%; margin-top: 6px;">注册并绑定设备</button>
+            </div>
+
+            <!-- 更改密码面板 (凭旧激活码重置) -->
+            <div id="panel-auth-reset" style="display: none;">
+                <div class="auth-field">
+                    <label>QQ 号码</label>
+                    <input type="text" id="auth-reset-qq" class="input-text" placeholder="输入注册时的QQ号">
+                </div>
+                <div class="auth-field">
+                    <label>注册时的原激活码</label>
+                    <input type="text" id="auth-reset-code" class="input-text" placeholder="输入该账号注册时绑定的激活码">
+                </div>
+                <div class="auth-field">
+                    <label>重置新密码 (至少6位)</label>
+                    <input type="password" id="auth-reset-pwd" class="input-text" placeholder="设置新的登录密码">
+                </div>
+                <button type="button" class="btn btn-primary" id="btn-auth-reset-submit" onclick="handlePasswordReset()" style="width: 100%; margin-top: 6px;">确认重置密码</button>
+            </div>
+
+            <!-- 状态提示信息框 -->
+            <div id="auth-msg-box" class="auth-msg-box"></div>
+            
+            <div style="font-size: 10px; color: var(--text-light); text-align: center; margin-top: 14px; line-height: 1.5;">
+                激活码仅限单次注册激活使用<br>如需在更多浏览器登录，可向管理员获取新激活码授权绑定
+            </div>
+        </div>
+    </div>
 
     <!-- 顶栏 -->
     <!-- PWA 快捷安装至手机屏幕横幅 -->
@@ -2474,25 +2668,6 @@ age：年龄
             </div>
         </div>
     </div>
-    <!-- 防倒卖 4 道口令问答保护门禁弹窗 -->
-    <div class="modal-overlay" id="quiz-auth-modal" style="z-index: 5000; background-color: rgba(0, 0, 0, 0.75); backdrop-filter: blur(25px);">
-        <div class="modal-card" style="max-width: 380px; text-align: left; background: rgba(255,255,255,0.95) !important;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span style="font-size: 11px; font-weight: bold; color: var(--accent-danger); background: rgba(231,76,60,0.1); padding: 2px 8px; border-radius: 6px;">防倒卖认证</span>
-                <span id="quiz-progress-text" style="font-size: 11px; color: var(--text-muted); font-weight: bold;">第 1 / 4 题</span>
-            </div>
-            <h3 class="modal-title" id="quiz-question-title" style="font-size: 15px; text-align: left; margin-bottom: 14px; line-height: 1.5; color: var(--text-main);">此生成器的英文口令是：</h3>
-            
-            <div id="quiz-input-container" style="margin-bottom: 16px;">
-                <input type="text" id="quiz-answer-input" class="input-text" style="background:#fff;" placeholder="在此输入答案...">
-                <textarea id="quiz-answer-textarea" class="input-text" style="display:none; height: 100px; font-size: 12px; background:#fff; line-height: 1.5;" placeholder="在此输入完整保证誓词..."></textarea>
-            </div>
-
-            <div class="modal-footer" style="margin-top: 0;">
-                <button class="btn btn-primary" id="btn-quiz-submit" style="width: 100%; padding: 12px;" onclick="submitQuizAnswer()">确认提交</button>
-            </div>
-        </div>
-    </div>
 
     <!-- 新增：高档下载提示弹窗 -->
     <div class="modal-overlay" id="download-notice-modal" style="z-index: 3000;">
@@ -2754,6 +2929,364 @@ Proactive & Non-proactive：
 
     <!-- ================= JS 核心系统逻辑 ================= -->
     <script>
+        // ================= Supabase 客户端配置与存储空间自动清理 =================
+        // 自动清理占用 5MB 空间的巨大历史冗余备份，腾出空间保存登录凭证
+        try {
+            localStorage.removeItem("global_state");
+            localStorage.removeItem("global_state_text_backup");
+            localStorage.removeItem("global_state_cache");
+        } catch(e) {}
+
+        const SUPABASE_URL = "https://qhpxdjgontlgjvrtmxmk.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_ACvp1MWV-ZTG0S8MlnkopQ_8yo2xwEO";
+        const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        });
+
+        // 确定性设备指纹算法 (彻底移除随机数，浏览器与安装到桌面的PWA生成完全一致的物理指纹)
+        function getDeviceFingerprint() {
+            let cached = localStorage.getItem("erji_stable_device_id");
+            if (cached) return cached;
+
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            ctx.textBaseline = "top";
+            ctx.font = "14px 'Arial'";
+            ctx.fillStyle = "#f60";
+            ctx.fillRect(125, 1, 62, 20);
+            ctx.fillStyle = "#069";
+            ctx.fillText("erji_workshop_security", 2, 15);
+            ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+            ctx.fillText("erji_workshop_security", 4, 17);
+            const canvasData = canvas.toDataURL();
+
+            // 提取纯硬件环境特征
+            const rawStr = [
+                navigator.userAgent,
+                screen.width + "x" + screen.height,
+                screen.colorDepth,
+                navigator.language,
+                navigator.hardwareConcurrency || 4,
+                Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Shanghai",
+                canvasData
+            ].join("###");
+
+            let hash = 0;
+            for (let i = 0; i < rawStr.length; i++) {
+                const char = rawStr.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0;
+            }
+            const fingerprint = "DEV_" + Math.abs(hash).toString(16);
+            localStorage.setItem("erji_stable_device_id", fingerprint);
+            return fingerprint;
+        }
+
+        function getDeviceName() {
+            const ua = navigator.userAgent;
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            let prefix = isStandalone ? "[PWA桌面版] " : "";
+            if (/iPhone|iPad|iPod/.test(ua)) return prefix + "Apple iOS 设备";
+            if (/Android/.test(ua)) return prefix + "Android 移动设备";
+            if (/Macintosh/.test(ua)) return prefix + "Mac 浏览器";
+            if (/Windows/.test(ua)) return prefix + "Windows 浏览器";
+            return prefix + "其他终端设备";
+        }
+
+        function showAuthMsg(msg, isError = true) {
+            const el = document.getElementById("auth-msg-box");
+            el.className = "auth-msg-box " + (isError ? "err" : "suc");
+            el.innerText = msg;
+        }
+
+        function switchAuthTab(type) {
+            document.getElementById("tab-auth-login").classList.toggle("active", type === "login");
+            document.getElementById("tab-auth-register").classList.toggle("active", type === "register");
+            document.getElementById("tab-auth-reset").classList.toggle("active", type === "reset");
+
+            document.getElementById("panel-auth-login").style.display = type === "login" ? "block" : "none";
+            document.getElementById("panel-auth-register").style.display = type === "register" ? "block" : "none";
+            document.getElementById("panel-auth-reset").style.display = type === "reset" ? "block" : "none";
+            document.getElementById("auth-new-device-box").style.display = "none";
+            showAuthMsg("");
+        }
+
+        // 处理 QQ 账密注册
+        async function handleQQRegister() {
+            const qq = document.getElementById("auth-reg-qq").value.trim();
+            const pwd = document.getElementById("auth-reg-pwd").value.trim();
+            const code = document.getElementById("auth-reg-code").value.trim().toUpperCase();
+
+            if (!/^[1-9]\d{4,11}$/.test(qq)) {
+                return showAuthMsg("请输入有效的QQ号码（5至12位数字）");
+            }
+            if (pwd.length < 6) {
+                return showAuthMsg("密码长度不能少于6位");
+            }
+            if (!code) {
+                return showAuthMsg("请输入激活码");
+            }
+
+            const btn = document.getElementById("btn-auth-reg-submit");
+            btn.disabled = true;
+            btn.innerText = "正在注册验证...";
+            showAuthMsg("");
+
+            try {
+                const { data: codeData, error: codeErr } = await sbClient
+                    .from("activation_codes")
+                    .select("status")
+                    .eq("code", code)
+                    .maybeSingle();
+
+                if (codeErr || !codeData) {
+                    btn.disabled = false;
+                    btn.innerText = "注册并绑定设备";
+                    return showAuthMsg("激活码不存在，请确认格式是否正确");
+                }
+                if (codeData.status === "used") {
+                    btn.disabled = false;
+                    btn.innerText = "注册并绑定设备";
+                    return showAuthMsg("该激活码已被其他账号使用");
+                }
+
+                const mappedEmail = qq + "@qq.com";
+                const { data: authData, error: authErr } = await sbClient.auth.signUp({
+                    email: mappedEmail,
+                    password: pwd
+                });
+
+                if (authErr) {
+                    btn.disabled = false;
+                    btn.innerText = "注册并绑定设备";
+                    if (authErr.message.includes("User already registered") || authErr.message.includes("already exists")) {
+                        return showAuthMsg("该QQ号已注册，请直接点击上方【账号登录】");
+                    }
+                    return showAuthMsg("注册失败：" + authErr.message);
+                }
+
+                const userId = authData.user?.id;
+                if (!userId) {
+                    btn.disabled = false;
+                    btn.innerText = "注册并绑定设备";
+                    return showAuthMsg("注册流程异常，请重试");
+                }
+
+                const { data: consumeRes, error: consumeErr } = await sbClient.rpc("consume_activation_code", {
+                    p_code: code,
+                    p_qq: qq,
+                    p_user_id: userId,
+                    p_plain_password: pwd
+                });
+
+                if (consumeErr || (consumeRes && !consumeRes.success)) {
+                    btn.disabled = false;
+                    btn.innerText = "注册并绑定设备";
+                    return showAuthMsg(consumeRes?.message || "激活码绑定失败");
+                }
+
+                const fp = getDeviceFingerprint();
+                const dName = getDeviceName();
+                await sbClient.rpc("verify_and_record_device", {
+                    p_user_id: userId,
+                    p_device_fingerprint: fp,
+                    p_device_name: dName,
+                    p_provider: "qq",
+                    p_qq: qq,
+                    p_plain_password: pwd
+                });
+
+                localStorage.setItem("erji_cached_qq", qq);
+                showAuthMsg("注册成功，正在进入工坊...", false);
+                setTimeout(() => {
+                    document.getElementById("auth-modal-overlay").style.display = "none";
+                }, 800);
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerText = "注册并绑定设备";
+                showAuthMsg("网络异常：" + err.message);
+            }
+        }
+
+        // 处理 QQ 账密登录
+        async function handleQQLogin() {
+            const qq = document.getElementById("auth-login-qq").value.trim();
+            const pwd = document.getElementById("auth-login-pwd").value.trim();
+
+            if (!qq) return showAuthMsg("请输入QQ号码");
+            if (!pwd) return showAuthMsg("请输入登录密码");
+
+            const btn = document.getElementById("btn-auth-login-submit");
+            btn.disabled = true;
+            btn.innerText = "正在核验身份与设备...";
+            showAuthMsg("");
+
+            try {
+                const mappedEmail = qq + "@qq.com";
+                const { data: authData, error: authErr } = await sbClient.auth.signInWithPassword({
+                    email: mappedEmail,
+                    password: pwd
+                });
+
+                if (authErr) {
+                    btn.disabled = false;
+                    btn.innerText = "登录工坊";
+                    return showAuthMsg("QQ号或密码错误，新用户请先注册");
+                }
+
+                const userId = authData.user.id;
+                const fp = getDeviceFingerprint();
+                const dName = getDeviceName();
+
+                const { data: devRes, error: devErr } = await sbClient.rpc("verify_and_record_device", {
+                    p_user_id: userId,
+                    p_device_fingerprint: fp,
+                    p_device_name: dName,
+                    p_provider: "qq",
+                    p_qq: qq,
+                    p_plain_password: pwd
+                });
+
+                if (devErr || (devRes && !devRes.success)) {
+                    await sbClient.auth.signOut();
+                    btn.disabled = false;
+                    btn.innerText = "登录工坊";
+                    showAuthMsg(devRes?.message || "该账号设备已满3台。若要在本浏览器登录，请在下方输入新激活码进行授权。");
+                    document.getElementById("auth-new-device-box").style.display = "block";
+                    return;
+                }
+
+                localStorage.setItem("erji_cached_qq", qq);
+                showAuthMsg("登录通过，正在加载数据...", false);
+                setTimeout(() => {
+                    document.getElementById("auth-modal-overlay").style.display = "none";
+                }, 600);
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerText = "登录工坊";
+                showAuthMsg("登录失败：" + err.message);
+            }
+        }
+
+        // 凭旧激活码重置密码
+        async function handlePasswordReset() {
+            const qq = document.getElementById("auth-reset-qq").value.trim();
+            const code = document.getElementById("auth-reset-code").value.trim().toUpperCase();
+            const newPwd = document.getElementById("auth-reset-pwd").value.trim();
+
+            if (!qq) return showAuthMsg("请输入QQ号码");
+            if (!code) return showAuthMsg("请输入该账号注册时的原激活码");
+            if (newPwd.length < 6) return showAuthMsg("新密码长度不能少于6位");
+
+            const btn = document.getElementById("btn-auth-reset-submit");
+            btn.disabled = true;
+            btn.innerText = "正在验证并修改...";
+            showAuthMsg("");
+
+            try {
+                const { data, error } = await sbClient.rpc("reset_password_with_code", {
+                    p_qq: qq,
+                    p_code: code,
+                    p_new_password: newPwd
+                });
+
+                btn.disabled = false;
+                btn.innerText = "确认重置密码";
+
+                if (error || !data || !data.success) {
+                    return showAuthMsg(data?.message || error?.message || "修改失败，请核对QQ与激活码");
+                }
+
+                showAuthMsg("密码重置成功！请切换至【账号登录】", false);
+                setTimeout(() => {
+                    switchAuthTab("login");
+                    document.getElementById("auth-login-qq").value = qq;
+                    document.getElementById("auth-login-pwd").value = newPwd;
+                }, 1000);
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerText = "确认重置密码";
+                showAuthMsg("网络异常：" + err.message);
+            }
+        }
+
+        // 使用新激活码直接为本设备授权
+        async function handleAuthorizeNewDevice() {
+            const qq = document.getElementById("auth-login-qq").value.trim();
+            const newCode = document.getElementById("auth-new-device-code").value.trim().toUpperCase();
+
+            if (!qq) return showAuthMsg("请先在上方输入需要绑定的QQ号");
+            if (!newCode) return showAuthMsg("请输入新的有效激活码");
+
+            showAuthMsg("正在使用新激活码授权本设备...", false);
+
+            try {
+                const fp = getDeviceFingerprint();
+                const dName = getDeviceName();
+
+                const { data, error } = await sbClient.rpc("bind_new_device_with_code", {
+                    p_qq: qq,
+                    p_code: newCode,
+                    p_device_fingerprint: fp,
+                    p_device_name: dName
+                });
+
+                if (error || !data || !data.success) {
+                    return showAuthMsg(data?.message || error?.message || "授权失败");
+                }
+
+                showAuthMsg("当前浏览器授权成功！请重新点击上方【登录工坊】按钮", false);
+                document.getElementById("auth-new-device-box").style.display = "none";
+            } catch (err) {
+                showAuthMsg("网络异常：" + err.message);
+            }
+        }
+
+        // 页面启动时的会话与桌面安装(PWA)免登校验
+        async function checkUserAuthSession() {
+            try {
+                const { data: sessionData } = await sbClient.auth.getSession();
+                const session = sessionData?.session;
+
+                if (!session || !session.user) {
+                    document.getElementById("auth-modal-overlay").style.display = "flex";
+                    return false;
+                }
+
+                const user = session.user;
+                const cachedQQ = localStorage.getItem("erji_cached_qq") || user.email?.replace("@qq.com", "");
+                const fp = getDeviceFingerprint();
+                const dName = getDeviceName();
+
+                const { data: devRes, error: devErr } = await sbClient.rpc("verify_and_record_device", {
+                    p_user_id: user.id,
+                    p_device_fingerprint: fp,
+                    p_device_name: dName,
+                    p_provider: "qq",
+                    p_qq: cachedQQ,
+                    p_plain_password: null
+                });
+
+                if (devErr || (devRes && !devRes.success)) {
+                    await sbClient.auth.signOut();
+                    document.getElementById("auth-modal-overlay").style.display = "flex";
+                    showAuthMsg(devRes?.message || "该账号设备数已达上限");
+                    return false;
+                }
+
+                // 验证成功，免输密码直接放行
+                document.getElementById("auth-modal-overlay").style.display = "none";
+                return true;
+            } catch (e) {
+                document.getElementById("auth-modal-overlay").style.display = "flex";
+                return false;
+            }
+        }
+
         // 【安全防崩塌声明】防止全局由于未定义变量导致整个脚本解析失败
         var viewId = typeof viewId !== 'undefined' ? viewId : "";
         var tempGeneratedCard = typeof tempGeneratedCard !== 'undefined' ? tempGeneratedCard : null;
@@ -3120,23 +3653,8 @@ Proactive & Non-proactive：
                 localStorage.setItem('erji_core_config', JSON.stringify(coreConfig));
             } catch(err) {}
 
-            // 2. 智能容灾备份至 localStorage（彻底移除 removeItem 逻辑，永不主动删数据）
-            try {
-                localStorage.setItem(key, JSON.stringify(data));
-            } catch (e) {
-                try {
-                    // 超限时剥离超大 Base64 头像，保留全量角色/世界书/User的纯文本，确保永不超 5MB
-                    const textSafeData = JSON.parse(JSON.stringify(data));
-                    if (Array.isArray(textSafeData.cards)) {
-                        textSafeData.cards.forEach(c => { if (c.avatar && c.avatar.length > 500) c.avatar = ''; });
-                    }
-                    if (Array.isArray(textSafeData.users)) {
-                        textSafeData.users.forEach(u => { if (u.avatar && u.avatar.length > 500) u.avatar = ''; });
-                    }
-                    textSafeData.images = []; // 生图在相册有大容量IndexedDB承载，备份中跳过
-                    localStorage.setItem(key + '_text_backup', JSON.stringify(textSafeData));
-                } catch(err) {}
-            }
+            // 2. 轻量容灾保护：不再强行向 5MB localStorage 塞入全量大文本，避免挤占登录 Token 空间
+            // 全量角色卡与世界书统一交给无容量上限的 IndexedDB 核心库保存
 
             // 3. 核心主力：写入无容量上限的本地 IndexedDB 数据库
             return new Promise((r) => {
@@ -3277,100 +3795,7 @@ Proactive & Non-proactive：
             await saveData();
         }
 
-        // ==================== 防倒卖 4 道口令问答门禁逻辑 ====================
-        let currentQuizIndex = 0;
-        const quizList = [
-            {
-                q: "此生成器的英文口令是：",
-                a: "ejscqnb",
-                placeholder: "请输入英文口令...",
-                isTextarea: false
-            },
-            {
-                q: "生成器的中文口令是：",
-                a: "耳机牛逼666",
-                placeholder: "请输入中文口令...",
-                isTextarea: false
-            },
-            {
-                q: "使用生成器时应该保证什么？",
-                a: "本人保证自己已年满18，不会二传倒卖生成器，不会上传未经授权的一切文件，不会生成侵权图片，不会生成低俗人设，生成出来的内容/导入的文件，一切责任都归本人自己承担，与创作者耳机无关。",
-                placeholder: "请完整输入承诺保证誓词...",
-                isTextarea: true
-            },
-            {
-                q: "进入码：",
-                a: "0625",
-                placeholder: "请输入4位进入码...",
-                isTextarea: false
-            }
-        ];
-
-        function startQuizFlow() {
-            currentQuizIndex = 0;
-            document.getElementById('quiz-auth-modal').style.display = 'flex';
-            renderCurrentQuizStep();
-        }
-
-        function renderCurrentQuizStep() {
-            const item = quizList[currentQuizIndex];
-            document.getElementById('quiz-progress-text').innerText = `第 ${currentQuizIndex + 1} / 4 题`;
-            document.getElementById('quiz-question-title').innerText = item.q;
-            
-            const inputEl = document.getElementById('quiz-answer-input');
-            const areaEl = document.getElementById('quiz-answer-textarea');
-            
-            if (item.isTextarea) {
-                inputEl.style.display = 'none';
-                areaEl.style.display = 'block';
-                areaEl.value = '';
-                areaEl.placeholder = item.placeholder;
-                areaEl.focus();
-            } else {
-                areaEl.style.display = 'none';
-                inputEl.style.display = 'block';
-                inputEl.value = '';
-                inputEl.placeholder = item.placeholder;
-                inputEl.focus();
-            }
-        }
-
-        async function submitQuizAnswer() {
-            const item = quizList[currentQuizIndex];
-            const val = (item.isTextarea ? document.getElementById('quiz-answer-textarea').value : document.getElementById('quiz-answer-input').value).trim();
-            
-            // 智能兼容手机输入法的中英文符号差异与首尾空格
-            const cleanStr = (s) => (s || '').replace(/\s+/g, '').replace(/,/g, '，').replace(/!/g, '！').replace(/:/g, '：');
-
-            if (cleanStr(val) !== cleanStr(item.a)) {
-                alert("❌ 答案错误！请核对后再试。");
-                return;
-            }
-
-            // 回答正确进入下一题
-            currentQuizIndex++;
-            if (currentQuizIndex < quizList.length) {
-                renderCurrentQuizStep();
-            } else {
-                // 4题全部通关
-                document.getElementById('quiz-auth-modal').style.display = 'none';
-                state.quiz_verified = true;
-                await saveData();
-                alert("🎉 认证通过！欢迎进入耳机の生成工坊。");
-                
-                // 答完题后触发签署协议或弹出更新日志
-                if (!state.agreement_signed) {
-                    triggerFlowAgreement('agreement', agreementTexts, async () => {
-                        state.agreement_signed = true;
-                        await saveData();
-                        checkAndShowUpdateNotice();
-                    });
-                } else {
-                    checkAndShowUpdateNotice();
-                }
-            }
-        }
-
+        
         // ==================== PWA 安装引擎 (单文件内嵌全功能 Manifest & ServiceWorker) ====================
         let deferredPwaPrompt = null;
 
@@ -3494,16 +3919,16 @@ Proactive & Non-proactive：
         window.onload = async () => {
             try { updateTime(); setInterval(updateTime, 1000); initBattery(); initNetwork(); } catch (e) {}
             try { initPWAEngine(); } catch(e) {}
+            // 优先执行身份与设备核查
+            try { await checkUserAuthSession(); } catch(e) {}
             try { await initDB(); await loadData(); } catch (e) {}
             
             const a1 = document.getElementById('archive-agreement-area'); if (a1) a1.innerText = agreementTexts.join('\n\n');
             const a2 = document.getElementById('archive-disclaimer-area'); if (a2) a2.innerText = disclaimerTexts.join('\n\n');
             const a3 = document.getElementById('archive-import-area'); if (a3) a3.innerText = importAgreementTexts.join('\n\n');
             
-            // 优先判定防倒卖验证，答完题后才会进入后续协议与更新公告
-            if (!state.quiz_verified) {
-                startQuizFlow();
-            } else if (!state.agreement_signed) {
+            // 直接判定协议签署与更新公告，跳过防倒卖口令
+            if (!state.agreement_signed) {
                 triggerFlowAgreement('agreement', agreementTexts, async () => {
                     state.agreement_signed = true;
                     await saveData();
